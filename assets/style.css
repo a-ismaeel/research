@@ -137,12 +137,26 @@ a:hover { text-decoration: underline; }
 .masthead .wrap { padding-left: 68px; }
 
 /* ---------- sub ribbon ---------- */
+/* The strip scrolls horizontally when the tabs outrun the viewport, which on a
+   phone hides the rightmost tabs entirely. The fade on the right edge is the
+   only cue that there is more to reach, so it is not decorative: it is the
+   affordance. It disappears once the strip is scrolled to the end. */
 .subribbon {
   position: sticky; top: 0; z-index: 30;
   background: var(--paper-2);
   border-bottom: 1px solid var(--rule);
 }
-.subribbon .wrap { display: flex; overflow-x: auto; scrollbar-width: thin; }
+.subribbon .wrap {
+  display: flex; overflow-x: auto; scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent 100%);
+}
+.subribbon .wrap.at-end {
+  mask-image: none; -webkit-mask-image: none;
+}
+.subribbon button { scroll-snap-align: start; }
 .subribbon button {
   appearance: none; background: none; border: 0; cursor: pointer;
   font-family: var(--sans); font-weight: 500; font-size: 13px; color: var(--ink-2);

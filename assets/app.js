@@ -49,7 +49,36 @@
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     if (push && history.replaceState) history.replaceState(null, '', '#' + key);
+    revealActiveTab();
     return true;
+  }
+
+  /* The tab strip scrolls horizontally on narrow screens. Two jobs: keep the
+     active tab in view (otherwise landing on #valuation shows a strip that
+     looks like nothing is selected), and drop the right-edge fade once there
+     is nothing further to scroll to. */
+  var strip = document.querySelector('.subribbon .wrap');
+
+  function syncStripFade() {
+    if (!strip) return;
+    var atEnd = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 2;
+    strip.classList.toggle('at-end', atEnd);
+  }
+
+  function revealActiveTab() {
+    if (!strip) return;
+    var on = strip.querySelector('button.active');
+    if (on && strip.scrollWidth > strip.clientWidth) {
+      var left = on.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2;
+      strip.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+    }
+    syncStripFade();
+  }
+
+  if (strip) {
+    strip.addEventListener('scroll', syncStripFade, { passive: true });
+    window.addEventListener('resize', syncStripFade);
+    syncStripFade();
   }
 
   document.addEventListener('click', function (e) {
