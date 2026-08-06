@@ -34,13 +34,15 @@
   /* ---------------- tabs ---------------- */
   function activate(key, push) {
     var panels = document.querySelectorAll('.tabpanel');
+    // Check for a match before touching anything — a hash that isn't a tab
+    // (e.g. an in-page anchor like #companies) must leave the current tab
+    // alone rather than blanking every panel.
     var found = false;
-    panels.forEach(function (p) {
-      var on = p.dataset.tab === key;
-      p.classList.toggle('active', on);
-      if (on) found = true;
-    });
+    panels.forEach(function (p) { if (p.dataset.tab === key) found = true; });
     if (!found) return false;
+    panels.forEach(function (p) {
+      p.classList.toggle('active', p.dataset.tab === key);
+    });
     document.querySelectorAll('.subribbon button').forEach(function (b) {
       var on = b.dataset.tab === key;
       b.classList.toggle('active', on);
@@ -55,6 +57,19 @@
     if (!b) return;
     activate(b.dataset.tab, true);
     window.scrollTo(0, 0);
+  });
+
+  // In-page links to a heading within the current tab (e.g. the "Companies
+  // covered" KPI tile pointing at #companies) rather than to another tab.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var id = a.getAttribute('href').slice(1);
+    var target = id && document.getElementById(id);
+    if (!target || target.classList.contains('tabpanel')) return;
+    e.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (history.replaceState) history.replaceState(null, '', '#' + id);
   });
 
   window.addEventListener('hashchange', function () {
