@@ -23,7 +23,10 @@
   --paper-2: #edf2f1;
   --ink:     #152528;
   --ink-2:   #4b5f63;
-  --ink-3:   #739096;
+  /* Third ink step. Must clear 4.5:1 on --paper, #fff and both wash surfaces:
+     it carries every footnote, KPI caption, n/a cell and chart axis label.
+     Worst case here is 4.70:1 on --wash-accent. #739096 measured 3.28:1. */
+  --ink-3:   #5a7277;
   --rule:    #dce5e4;
   --rule-2:  #e7eeed;
   --accent:  #145c4a;
@@ -33,6 +36,12 @@
   --pos:     #145c4a;
   --neg:     #d32222;
   --neg-tint: #fdf2f2;
+  /* Callout surfaces. A tinted panel with a full border says "this is
+     commentary, not data" without an accent stripe down one edge. */
+  --wash-accent: #f0f7f5;
+  --wash-neg:    #fdf4f4;
+  --rule-accent: #c3dbd4;
+  --rule-neg:    #f0cccc;
   --serif:   "Archivo Variable", ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   --sans:    "Archivo Variable", ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   --mono:    "Spline Sans Mono Variable", ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
@@ -115,12 +124,12 @@ a:hover { text-decoration: underline; }
 }
 .drawer .dlist a, .drawer .dlist span.soon {
   display: flex; align-items: center; gap: 11px; padding: 9px 22px;
-  font-size: 14px; color: #cfd6dc; border-left: 3px solid transparent;
+  font-size: 14px; color: #cfd6dc;
 }
 .drawer .dlist a:hover { background: rgba(255,255,255,.07); color: #fff; text-decoration: none; }
-.drawer .dlist a.active { color: #fff; border-left-color: var(--gold);
-                          background: rgba(20,92,74,.32); font-weight: 600; }
-.drawer .dlist span.soon { color: #6d7883; cursor: default; }
+/* Background and weight already carry the active state; the stripe was spare. */
+.drawer .dlist a.active { color: #fff; background: rgba(20,92,74,.55); font-weight: 600; }
+.drawer .dlist span.soon { color: #8e99a4; cursor: default; }
 .drawer .dlist span.soon::after {
   content: "soon"; margin-left: auto; font-family: var(--mono); font-size: 9px; letter-spacing: .1em;
   border: 1px solid #4a545e; padding: 1px 5px; border-radius: var(--radius-sm);
@@ -214,9 +223,9 @@ a.kpi:hover .k { color: var(--accent-d); }
 .kpi .v.neg { color: var(--neg); }
 
 /* ---------- verdict banner ---------- */
-.verdict { border: 1px solid var(--rule); border-left: 4px solid var(--accent);
-           border-radius: var(--radius); background: #fff; padding: 16px 20px; margin: 22px 0; }
-.verdict.bad { border-left-color: var(--neg); }
+.verdict { border: 1px solid var(--rule-accent); border-radius: var(--radius);
+           background: var(--wash-accent); padding: 16px 20px; margin: 22px 0; }
+.verdict.bad { border-color: var(--rule-neg); background: var(--wash-neg); }
 .verdict .lbl { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
                 color: var(--ink-3); margin-bottom: 4px; }
 .verdict .hd { font-family: var(--serif); font-weight: 700; font-size: 18px; margin-bottom: 6px; }
@@ -243,7 +252,8 @@ tr.total th.rl2, tr.total td { font-weight: 700; border-top: 1px solid var(--rul
 tr.sub th.rl2 { padding-left: 26px; color: var(--ink-2); }
 tr.sub2 th.rl2 { padding-left: 40px; color: var(--ink-2); }
 td.neg { color: var(--neg); }
-td.na { color: var(--rule); }
+/* De-emphasised, but "no data" is information: it has to stay readable. */
+td.na { color: var(--ink-3); }
 tr.spacer td { border-bottom: none; padding: 7px 0 0; }
 tr.spacer:hover td { background: none; }
 .blk { margin: 24px 0 8px; }
@@ -317,13 +327,14 @@ tr.spacer:hover td { background: none; }
    first one would otherwise butt straight up against it. */
 .figure + .insight { margin-top: 18px; }
 .insight .icomment {
-  border: 1px solid var(--rule); border-left: 3px solid var(--accent);
-  border-radius: var(--radius); background: #fff; padding: 16px 20px; min-width: 0;
+  border: 1px solid var(--rule-accent); border-radius: var(--radius);
+  background: var(--wash-accent); padding: 16px 20px; min-width: 0;
   display: flex; flex-direction: column; justify-content: center;
 }
+/* The label, not an edge stripe, is what marks this as the read-out. */
 .insight .ilbl {
   font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--ink-3); margin-bottom: 8px;
+  color: var(--accent-d); margin-bottom: 8px;
 }
 .insight .icomment h3 { margin: 0 0 6px; font-size: 15px; text-transform: none;
                         letter-spacing: 0; color: var(--ink); font-family: var(--serif);
@@ -394,7 +405,10 @@ tr.spacer:hover td { background: none; }
 h2.first { margin-top: 10px; }
 .prose.lead p { font-size: 15.5px; }
 .prose.lead strong { color: var(--ink); }
-.verdict.inline { margin: 0; background: var(--paper-2); }
+/* Only the margin changes when the banner sits inside a grid cell. It must not
+   restate the background: that would beat .verdict.bad on equal specificity and
+   a negative verdict would lose the one thing marking it negative. */
+.verdict.inline { margin: 0; }
 
 /* ---------- company cards ---------- */
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin: 18px 0; }
@@ -425,8 +439,10 @@ h2.first { margin-top: 10px; }
 .case .h { font-weight: 700; margin-bottom: 4px; }
 .case .p { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); letter-spacing: .02em; margin-top: 6px; }
 .case p { margin: 0; color: var(--ink-2); font-size: 13.5px; }
-.bull { border-left: 3px solid var(--pos); }
-.bear { border-left: 3px solid var(--neg); }
+/* Which side a card argues is already stated by the <h3> above its group, so
+   the tint reinforces the heading rather than carrying the meaning alone. */
+.bull { border-color: var(--rule-accent); background: var(--wash-accent); }
+.bear { border-color: var(--rule-neg); background: var(--wash-neg); }
 
 /* Two risk cards side by side rather than one per line. */
 .caserow { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
@@ -462,4 +478,19 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
   .ribbon, .subribbon { position: static; }
   .tabpanel { display: block !important; }
   .card:hover { box-shadow: none; }
+}
+
+/* ---------- reduced motion ----------
+   Switching tabs scrolls the page and the tab strip. Someone who has asked the
+   OS for less movement still gets every state change, just without the travel.
+   app.js checks the same query before its two programmatic scrolls. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card:hover { transform: none; }
 }

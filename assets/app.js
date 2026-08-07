@@ -1,5 +1,14 @@
 // Side drawer + sub-ribbon tab routing + chart hover read-out.
 (function () {
+  /* Honour the OS "reduce motion" setting for the two programmatic scrolls
+     below. A CSS media query cannot override a behavior passed in JS, so the
+     query is read here and the scrolls jump instead of travelling. Read live
+     rather than cached so a mid-session change to the setting is picked up. */
+  function motionOK() {
+    return !window.matchMedia ||
+           !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
   /* ---------------- side drawer ---------------- */
   var toggle = document.querySelector('.navtoggle');
   var panel = document.getElementById('drawer');
@@ -70,7 +79,8 @@
     var on = strip.querySelector('button.active');
     if (on && strip.scrollWidth > strip.clientWidth) {
       var left = on.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2;
-      strip.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+      strip.scrollTo({ left: Math.max(0, left),
+                       behavior: motionOK() ? 'smooth' : 'auto' });
     }
     syncStripFade();
   }
@@ -106,7 +116,8 @@
     var target = document.getElementById(id);
     if (!target) return;
     e.preventDefault();
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    target.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto',
+                            block: 'start' });
     if (history.replaceState) history.replaceState(null, '', '#' + id);
   });
 
