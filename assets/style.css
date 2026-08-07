@@ -266,6 +266,11 @@ tr.spacer:hover td { background: none; }
 .lg { display: inline-flex; align-items: center; gap: 6px; }
 .lg i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
 .lg i.ln { height: 3px; border-radius: 0; }
+/* An SVG chart scales to its container, so a full-width figure is also a tall
+   one: a 720x300 viewBox stretched to 1100px stands 470px high. The fix is the
+   aspect ratio, not the width. Standalone charts are drawn on a wide, short
+   viewBox (see build_site) so they fill the row at a sane height; capping the
+   width instead would only trade the height problem for an empty margin. */
 .figure { border: 1px solid var(--rule); border-radius: var(--radius); background: #fff;
           padding: 14px 16px 10px; margin: 0; }
 
@@ -308,6 +313,9 @@ tr.spacer:hover td { background: none; }
   display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
   align-items: stretch; margin: 0 0 18px;
 }
+/* Rows space each other with a bottom margin, so a standalone chart above the
+   first one would otherwise butt straight up against it. */
+.figure + .insight { margin-top: 18px; }
 .insight .icomment {
   border: 1px solid var(--rule); border-left: 3px solid var(--accent);
   border-radius: var(--radius); background: #fff; padding: 16px 20px; min-width: 0;
@@ -328,6 +336,55 @@ tr.spacer:hover td { background: none; }
   .insight { grid-template-columns: 1fr; }
   .insight .icomment { order: 2; }
 }
+/* ---------- company comparison: chips, reading, chart ---------- */
+/* Three columns so the chart stays a readable size instead of stretching the
+   full page width. The chips carry the current figure, the middle column the
+   reading, the right the eight-year shape. */
+.cmprow { margin: 0 0 10px; padding: 16px 0 18px; border-bottom: 1px solid var(--rule-2); }
+.cmprow:last-child { border-bottom: 0; }
+.cmprow > h3 { margin: 0 0 12px; font-family: var(--serif); font-weight: 700;
+               font-size: 15.5px; text-transform: none; letter-spacing: -.01em;
+               color: var(--ink); }
+.cmpgrid { display: grid; grid-template-columns: 132px minmax(0, 1fr) minmax(0, 1.15fr);
+           gap: 18px; align-items: start; }
+
+.cmpchips { display: flex; flex-direction: column; gap: 8px; }
+.chip { border: 1px solid var(--rule); border-radius: var(--radius);
+        background: #fff; padding: 9px 11px; }
+.chip .cn { display: block; font-family: var(--mono); font-size: 10px;
+            letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.chip b { display: block; font-family: var(--mono); font-weight: 600; font-size: 17px;
+          font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+          color: var(--ink); margin-top: 3px; }
+/* The leader is filled rather than merely tinted: at chip size a tint reads as
+   an accident, a fill reads as an answer. */
+.chip.lead { background: var(--accent); border-color: var(--accent); }
+.chip.lead .cn { color: rgba(255,255,255,.72); }
+.chip.lead b { color: #fff; }
+.chip .mk { display: block; font-family: var(--mono); font-size: 9.5px;
+            letter-spacing: .1em; text-transform: uppercase;
+            color: rgba(255,255,255,.85); margin-top: 3px; }
+
+/* Chips laid out across rather than down, for a single headline comparison. */
+.chiprow { display: flex; gap: 12px; margin: 16px 0 18px; flex-wrap: wrap; }
+.chiprow .chip { flex: 1 1 160px; }
+.chip .sub { display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 4px; }
+.chip.lead .sub { color: rgba(255,255,255,.78); }
+
+.cmpread { font-size: 13.5px; color: var(--ink-2); }
+.cmpread p { margin: 0 0 8px; line-height: 1.6; }
+.cmpread p:last-child { margin-bottom: 0; }
+.cmpread strong { color: var(--ink); }
+.cmpchart { min-width: 0; border: 1px solid var(--rule); border-radius: var(--radius);
+            background: #fff; padding: 10px 12px 6px; }
+.cmpchart .legend { padding-left: 46px; gap: 10px; font-size: 11px; }
+
+@media (max-width: 980px) {
+  .cmpgrid { grid-template-columns: 1fr; }
+  .cmpchips { flex-direction: row; }
+  .cmpchips .chip { flex: 1; }
+}
+
 .figure.cmp { padding-top: 12px; margin-bottom: 18px; }
 .figure.cmp h3 { margin: 0 0 4px; font-family: var(--serif); font-weight: 700;
                  text-transform: none; letter-spacing: 0; color: var(--ink); font-size: 15px; }
@@ -370,6 +427,21 @@ h2.first { margin-top: 10px; }
 .case p { margin: 0; color: var(--ink-2); font-size: 13.5px; }
 .bull { border-left: 3px solid var(--pos); }
 .bear { border-left: 3px solid var(--neg); }
+
+/* Two risk cards side by side rather than one per line. */
+.caserow { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+.caserow .case { margin-bottom: 0; }
+@media (max-width: 880px) { .caserow { grid-template-columns: 1fr; } }
+
+/* Long-form text with nothing beside it. One column would either run to an
+   unreadable line length or leave half the page empty, so it is set in two:
+   the measure stays near 70 characters and the width is used. Paragraphs are
+   allowed to run across the gap, as they do in print, which is what makes the
+   columns balance when a block is a single long paragraph. */
+.twocol { max-width: none; columns: 2; column-gap: 34px; }
+.twocol p { margin-top: 0; orphans: 3; widows: 3; }
+.twocol p:last-child { margin-bottom: 0; }
+@media (max-width: 880px) { .twocol { columns: 1; } }
 
 /* ---------- pending ---------- */
 .pending { border: 1px dashed var(--rule); border-radius: var(--radius); background: var(--paper-2);

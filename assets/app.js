@@ -88,14 +88,23 @@
     window.scrollTo(0, 0);
   });
 
-  // In-page links to a heading within the current tab (e.g. the "Companies
-  // covered" KPI tile pointing at #companies) rather than to another tab.
+  // Hash links come in two kinds: one that names a tab (the "Value creation"
+  // KPI tile pointing at the tab that shows the workings) and one that names a
+  // heading inside the tab already open (the "Companies covered" tile).
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href^="#"]');
     if (!a) return;
     var id = a.getAttribute('href').slice(1);
-    var target = id && document.getElementById(id);
-    if (!target || target.classList.contains('tabpanel')) return;
+    if (!id) return;
+
+    if (document.querySelector('.tabpanel[data-tab="' + id + '"]')) {
+      e.preventDefault();
+      if (activate(id, true)) window.scrollTo(0, 0);
+      return;
+    }
+
+    var target = document.getElementById(id);
+    if (!target) return;
     e.preventDefault();
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (history.replaceState) history.replaceState(null, '', '#' + id);
