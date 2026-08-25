@@ -1,9 +1,8 @@
-// Side drawer + sub-ribbon tab routing + chart hover read-out.
+// Side drawer, section rail, scoreboard column focus, chart hover read-out.
 (function () {
-  /* Honour the OS "reduce motion" setting for the two programmatic scrolls
-     below. A CSS media query cannot override a behavior passed in JS, so the
-     query is read here and the scrolls jump instead of travelling. Read live
-     rather than cached so a mid-session change to the setting is picked up. */
+  /* Honour the OS "reduce motion" setting for programmatic scrolls. A CSS media
+     query cannot override a behavior passed in JS, so the query is read here.
+     Read live rather than cached so a mid-session change is picked up. */
   function motionOK() {
     return !window.matchMedia ||
            !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -28,9 +27,7 @@
   }
 
   if (toggle) {
-    toggle.addEventListener('click', function () {
-      setDrawer(panel.hidden);
-    });
+    toggle.addEventListener('click', function () { setDrawer(panel.hidden); });
   }
   if (scrim) scrim.addEventListener('click', function () { setDrawer(false); });
   document.addEventListener('keydown', function (e) {
@@ -40,95 +37,81 @@
     }
   });
 
-  /* ---------------- tabs ---------------- */
-  function activate(key, push) {
-    var panels = document.querySelectorAll('.tabpanel');
-    // Check for a match before touching anything — a hash that isn't a tab
-    // (e.g. an in-page anchor like #companies) must leave the current tab
-    // alone rather than blanking every panel.
-    var found = false;
-    panels.forEach(function (p) { if (p.dataset.tab === key) found = true; });
-    if (!found) return false;
-    panels.forEach(function (p) {
-      p.classList.toggle('active', p.dataset.tab === key);
+  /* ---------------- section rail ----------------
+     Marks the section you are currently reading. Without it a long page gives
+     no sense of position, which is what made the tabbed version hard to use in
+     a different way. IntersectionObserver rather than a scroll handler so it
+     costs nothing while idle. */
+  var railLinks = [].slice.call(document.querySelectorAll('.toc a'));
+  if (railLinks.length && 'IntersectionObserver' in window) {
+    var byId = {};
+    railLinks.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+
+    var targets = railLinks
+      .map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); })
+      .filter(Boolean);
+
+    var visible = {};
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { visible[en.target.id] = en.isIntersecting; });
+      // Highest section currently on screen wins, so scrolling up marks the
+      // section you have moved back into rather than the one below it.
+      var current = null;
+      for (var i = 0; i < targets.length; i++) {
+        if (visible[targets[i].id]) { current = targets[i].id; break; }
+      }
+      railLinks.forEach(function (a) {
+        a.classList.toggle('on', a.getAttribute('href').slice(1) === current);
+      });
+    }, { rootMargin: '-12% 0px -70% 0px', threshold: 0 });
+
+    targets.forEach(function (t) { obs.observe(t); });
+
+    railLinks.forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        var t = document.getElementById(a.getAttribute('href').slice(1));
+        if (!t) return;
+        e.preventDefault();
+        t.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'start' });
+        if (history.replaceState) history.replaceState(null, '', a.getAttribute('href'));
+      });
     });
-    document.querySelectorAll('.subribbon button').forEach(function (b) {
-      var on = b.dataset.tab === key;
-      b.classList.toggle('active', on);
-      b.setAttribute('aria-selected', on ? 'true' : 'false');
-    });
-    if (push && history.replaceState) history.replaceState(null, '', '#' + key);
-    revealActiveTab();
-    return true;
   }
 
-  /* The tab strip scrolls horizontally on narrow screens. Two jobs: keep the
-     active tab in view (otherwise landing on #valuation shows a strip that
-     looks like nothing is selected), and drop the right-edge fade once there
-     is nothing further to scroll to. */
-  var strip = document.querySelector('.subribbon .wrap');
+  /* ---------------- scoreboard column focus ---------------- */
+  var sb = document.getElementById('sb-table');
+  if (sb) {
+    var heads = [].slice.call(sb.querySelectorAll('th.sb-co'));
 
-  function syncStripFade() {
-    if (!strip) return;
-    var atEnd = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 2;
-    strip.classList.toggle('at-end', atEnd);
-  }
-
-  function revealActiveTab() {
-    if (!strip) return;
-    var on = strip.querySelector('button.active');
-    if (on && strip.scrollWidth > strip.clientWidth) {
-      var left = on.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2;
-      strip.scrollTo({ left: Math.max(0, left),
-                       behavior: motionOK() ? 'smooth' : 'auto' });
-    }
-    syncStripFade();
-  }
-
-  if (strip) {
-    strip.addEventListener('scroll', syncStripFade, { passive: true });
-    window.addEventListener('resize', syncStripFade);
-    syncStripFade();
-  }
-
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('.subribbon button');
-    if (!b) return;
-    activate(b.dataset.tab, true);
-    window.scrollTo(0, 0);
-  });
-
-  // Hash links come in two kinds: one that names a tab (the "Value creation"
-  // KPI tile pointing at the tab that shows the workings) and one that names a
-  // heading inside the tab already open (the "Companies covered" tile).
-  document.addEventListener('click', function (e) {
-    var a = e.target.closest && e.target.closest('a[href^="#"]');
-    if (!a) return;
-    var id = a.getAttribute('href').slice(1);
-    if (!id) return;
-
-    if (document.querySelector('.tabpanel[data-tab="' + id + '"]')) {
-      e.preventDefault();
-      if (activate(id, true)) window.scrollTo(0, 0);
-      return;
+    function focusCo(co) {
+      if (!co || sb.getAttribute('data-hl') === co) {
+        sb.removeAttribute('data-hl');
+        sb.querySelectorAll('.on').forEach(function (el) { el.classList.remove('on'); });
+        heads.forEach(function (h) { h.setAttribute('aria-pressed', 'false'); });
+        return;
+      }
+      sb.setAttribute('data-hl', co);
+      sb.querySelectorAll('[data-co]').forEach(function (el) {
+        el.classList.toggle('on', el.getAttribute('data-co') === co);
+      });
+      heads.forEach(function (h) {
+        h.setAttribute('aria-pressed', h.getAttribute('data-co') === co ? 'true' : 'false');
+      });
     }
 
-    var target = document.getElementById(id);
-    if (!target) return;
-    e.preventDefault();
-    target.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto',
-                            block: 'start' });
-    if (history.replaceState) history.replaceState(null, '', '#' + id);
-  });
-
-  window.addEventListener('hashchange', function () {
-    activate(location.hash.replace('#', ''), false);
-  });
-
-  var initial = location.hash.replace('#', '');
-  if (!initial || !activate(initial, false)) {
-    var first = document.querySelector('.subribbon button');
-    if (first) activate(first.dataset.tab, false);
+    heads.forEach(function (h) {
+      h.setAttribute('role', 'button');
+      h.setAttribute('tabindex', '0');
+      h.setAttribute('aria-pressed', 'false');
+      h.title = 'Show this company on its own';
+      h.addEventListener('click', function () { focusCo(h.getAttribute('data-co')); });
+      h.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          focusCo(h.getAttribute('data-co'));
+        }
+      });
+    });
   }
 
   /* ---------------- chart hover ---------------- */
