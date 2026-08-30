@@ -41,15 +41,89 @@
      Marks the section you are currently reading. Without it a long page gives
      no sense of position, which is what made the tabbed version hard to use in
      a different way. IntersectionObserver rather than a scroll handler so it
-     costs nothing while idle. */
-  var railLinks = [].slice.call(document.querySelectorAll('.toc a'));
-  if (railLinks.length && 'IntersectionObserver' in window) {
-    var byId = {};
-    railLinks.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+     costs nothing while idle.
 
-    var targets = railLinks
-      .map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); })
+     The rail is a two-level spine: the same grouping questions on every
+     industry, with that industry's own headings nested under them. One DOM
+     serves both breakpoints -- on the rail the active section's children open
+     automatically, and below 980px CSS turns the same nav into a bottom sheet
+     driven by the bar. */
+  var toc = document.getElementById('toc');
+  var items = toc ? [].slice.call(toc.querySelectorAll('.toc-i')) : [];
+
+  if (items.length && 'IntersectionObserver' in window) {
+    var order = items.map(function (el) { return el.getAttribute('data-sec'); });
+
+    var targets = order
+      .map(function (id) { return document.getElementById(id); })
       .filter(Boolean);
+
+    /* Spine item -> the ids it speaks for, so the bar can name the section a
+       reader is in even when they are deep inside a child. */
+    var ownerOf = {};
+    items.forEach(function (el) {
+      var id = el.getAttribute('data-sec');
+      // A spine row is reached before its children and claims them below, so
+      // never overwrite a mapping that is already there -- a child pointing at
+      // itself would leave its parent closed while the child is being read.
+      if (!(id in ownerOf)) ownerOf[id] = id;
+      var kids = el.nextElementSibling;
+      if (el.classList.contains('toc-sp') && kids && kids.classList.contains('toc-kids')) {
+        [].slice.call(kids.querySelectorAll('.toc-i')).forEach(function (k) {
+          ownerOf[k.getAttribute('data-sec')] = id;
+        });
+      }
+    });
+
+    var spineItems = items.filter(function (el) {
+      return !el.classList.contains('toc-ki');
+    });
+
+    var bar = document.querySelector('.tocbar');
+    var barText = document.querySelector('.tocbar-t');
+    var barNum = document.querySelector('.tocbar-n');
+
+    function kidsOf(el) {
+      var n = el.nextElementSibling;
+      return (n && n.classList.contains('toc-kids')) ? n : null;
+    }
+
+    /* A section is "open" on the rail when it or one of its children is the
+       one being read. The moment the reader uses an expander on the sheet
+       they take over, and scrolling stops rearranging what they opened --
+       otherwise a section they just opened snaps shut under them. Control
+       goes back to the page when the sheet closes. */
+    var manualMode = false;
+
+    function mark(current) {
+      var owner = ownerOf[current] || current;
+      // Both the child being read and the spine row above it are marked, so
+      // the rail shows the trail rather than a single orphaned line.
+      items.forEach(function (el) {
+        var id = el.getAttribute('data-sec');
+        el.classList.toggle('on', id === current || id === owner);
+      });
+      if (!manualMode) {
+        spineItems.forEach(function (el) {
+          var kids = kidsOf(el);
+          if (!kids) return;
+          var open = el.getAttribute('data-sec') === owner;
+          var x = el.querySelector('.toc-x');
+          kids.classList.toggle('open', open);
+          if (x) x.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+      }
+      if (barText) {
+        var sp = spineItems.filter(function (el) {
+          return el.getAttribute('data-sec') === owner;
+        })[0];
+        var link = sp && sp.querySelector('a');
+        if (link) barText.textContent = link.textContent.trim();
+        if (barNum && sp) {
+          barNum.textContent = (spineItems.indexOf(sp) + 1) + '/' + spineItems.length;
+        }
+      }
+    }
 
     var visible = {};
     var obs = new IntersectionObserver(function (entries) {
@@ -60,21 +134,60 @@
       for (var i = 0; i < targets.length; i++) {
         if (visible[targets[i].id]) { current = targets[i].id; break; }
       }
-      railLinks.forEach(function (a) {
-        a.classList.toggle('on', a.getAttribute('href').slice(1) === current);
-      });
+      if (current) mark(current);
     }, { rootMargin: '-12% 0px -70% 0px', threshold: 0 });
 
     targets.forEach(function (t) { obs.observe(t); });
+    if (targets.length) mark(targets[0].id);
 
-    railLinks.forEach(function (a) {
-      a.addEventListener('click', function (e) {
-        var t = document.getElementById(a.getAttribute('href').slice(1));
-        if (!t) return;
-        e.preventDefault();
-        t.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'start' });
-        if (history.replaceState) history.replaceState(null, '', a.getAttribute('href'));
-      });
+    /* ---- the sheet ---- */
+    var scrim2 = document.querySelector('.toc-scrim');
+    var closeBtn = document.querySelector('.toc-close');
+
+    function setSheet(open) {
+      if (!bar || !toc) return;
+      toc.classList.toggle('open', open);
+      if (scrim2) scrim2.hidden = !open;
+      bar.setAttribute('aria-expanded', open ? 'true' : 'false');
+      document.body.style.overflow = open ? 'hidden' : '';
+      if (!open) manualMode = false;
+    }
+
+    if (bar) bar.addEventListener('click', function () {
+      setSheet(!toc.classList.contains('open'));
+    });
+    if (scrim2) scrim2.addEventListener('click', function () { setSheet(false); });
+    if (closeBtn) closeBtn.addEventListener('click', function () { setSheet(false); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && toc && toc.classList.contains('open')) {
+        setSheet(false);
+        if (bar) bar.focus();
+      }
+    });
+
+    /* First tap on a spine row's expander opens it; the label still navigates,
+       so nothing is two taps away that used to be one. */
+    toc.addEventListener('click', function (e) {
+      var x = e.target.closest('.toc-x');
+      if (!x) return;
+      var row = x.closest('.toc-i');
+      var kids = kidsOf(row);
+      if (!kids) return;
+      manualMode = true;
+      var open = !kids.classList.contains('open');
+      kids.classList.toggle('open', open);
+      x.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    toc.addEventListener('click', function (e) {
+      var a = e.target.closest('.toc-i > a');
+      if (!a) return;
+      var t = document.getElementById(a.getAttribute('href').slice(1));
+      if (!t) return;
+      e.preventDefault();
+      setSheet(false);
+      t.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'start' });
+      if (history.replaceState) history.replaceState(null, '', a.getAttribute('href'));
     });
   }
 
