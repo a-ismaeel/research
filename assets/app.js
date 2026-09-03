@@ -229,12 +229,13 @@
 
   /* ---------------- chart hover ---------------- */
   function fmt(v, f) {
-    if (v === null || v === undefined) return '—';
+    if (v === null || v === undefined) return 'n/a';
     switch (f) {
       case 'pct': return (v * 100).toFixed(1) + '%';
       case 'pp': return (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + 'pt';
       case 'num2': return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       case 'x': return v.toFixed(2) + 'x';
+      case 'd': return Math.round(v).toLocaleString() + ' days';
       default:
         return Math.abs(v) < 100
           ? v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })

@@ -1,6 +1,6 @@
-/* MERIDIAN — Saudi equity research
+/* MERIDIAN: Saudi equity research
    Shares its type and color system with aismaeel.com: analytical precision
-   rendered warmly. Ink on paper, tabular numerals, thin rules — now in the
+   rendered warmly. Ink on paper, tabular numerals, thin rules, now in the
    brand's pine-evergreen palette and Archivo/Spline Sans Mono type. */
 
 @font-face {
@@ -414,7 +414,11 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 .op-v.pos { color: var(--pos); } .op-v.neg { color: var(--neg); }
 
 /* ---------- the scoreboard ---------- */
-.scoreboard { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+/* min-width, because at four companies the measure column was being squeezed
+   until "Net revenues" wrapped onto three lines. It scrolls inside .tbl-wrap
+   rather than compressing. */
+.scoreboard { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 13.5px; }
+.scoreboard th.sb-m { min-width: 168px; }
 .scoreboard caption { text-align: left; font-size: 12.5px; color: var(--ink-3);
                       padding: 12px 14px; border-bottom: 1px solid var(--rule); }
 .scoreboard th, .scoreboard td { padding: 10px 14px; text-align: right;
@@ -507,7 +511,7 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 .sym { display: block; }
 
 /* ---------- the build sequence ----------
-   A numbered list because the order is the content: no tower without a licence.
+   A numbered list because the order is the content: no tower without a license.
    The dotted rail is drawn on the marker column so it connects the icons rather
    than floating beside them, and stops before the last step. */
 .seq { list-style: none; margin: 26px 0 0; padding: 0; counter-reset: none; }
@@ -626,6 +630,50 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
                    font-family: var(--sans); font-size: 13.5px; white-space: normal;
                    color: var(--ink-2); }
 .matrix tbody tr:hover td, .matrix tbody tr:hover th { background: var(--wash-accent); }
+/* Four companies rather than three: the cells need this much width before they
+   wrap every other word. It scrolls inside .tbl-wrap either way. */
+.matrix.wide { min-width: 1000px; }
+.matrix.wide thead th:first-child { width: 152px; }
+
+/* ---------- the administered-margin diagram ---------- */
+.m-brace { fill: none; stroke: var(--rule-accent); stroke-width: 1.5; }
+.m-cost { fill: var(--wash-accent); stroke: var(--rule-accent); }
+.m-marg { fill: var(--accent); }
+.m-h { font-family: var(--mono); font-size: 13px; font-weight: 600;
+       letter-spacing: .1em; fill: var(--ink); }
+.m-s { font-family: var(--sans); font-size: 13px; fill: var(--ink-3); }
+/* Anything sitting on the solid segment inverts. */
+.m-inv { fill: #fff; }
+.m-s.m-inv { fill: rgba(255,255,255,.86); }
+.m-tick { stroke: var(--rule); stroke-width: 1; }
+.m-arrow { stroke: var(--ink-3); stroke-width: 1.5; fill: none; }
+.m-fill { fill: var(--ink-3); }
+.m-note { font-family: var(--sans); font-size: 13.5px; fill: var(--ink-2); }
+
+/* ---------- invested capital, split between the plant and the price paid ----------
+   Both mills diagrams carry small type inside a wide viewBox, so below about
+   720px they are scrolled at a readable size rather than scaled down to
+   nothing. They get the same treatment as the wide tables. */
+.ic-fig, .m-fig { display: block; width: 100%; min-width: 720px; height: auto; }
+.ic-head { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+          fill: var(--ink-3); }
+.ic-rule { stroke: var(--rule); stroke-width: 1; }
+.ic-name { font-family: var(--serif); font-size: 15.5px; font-weight: 800;
+          letter-spacing: -.01em; fill: var(--ink); }
+.ic-op { fill: var(--accent); }
+.ic-acq { fill: var(--gold); }
+.ic-tot { font-family: var(--mono); font-size: 12.5px; fill: var(--ink-3); }
+.ic-val { font-family: var(--mono); font-size: 16px; font-weight: 600; fill: var(--ink-2); }
+.ic-val.ic-best { fill: var(--accent-d); }
+.ic-leg { font-family: var(--sans); font-size: 12px; fill: var(--ink-3); }
+
+/* ---------- revenue per ton ---------- */
+.perton { min-width: 460px; }
+.perton caption { caption-side: top; text-align: left; padding: 0 0 10px;
+                    font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+                    text-transform: uppercase; color: var(--ink-3); }
+.perton tbody th { text-align: left; font-weight: 400; font-family: var(--sans);
+                     font-size: 14.5px; color: var(--ink); }
 
 /* ---------- stance: the two answers a reader actually arrives with ---------- */
 .stance { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 22px 0 6px; }
