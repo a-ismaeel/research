@@ -667,8 +667,43 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 .ic-val.ic-best { fill: var(--accent-d); }
 .ic-leg { font-family: var(--sans); font-size: 12px; fill: var(--ink-3); }
 
-/* ---------- revenue per ton ---------- */
+/* ---------- car rental: the life of one vehicle, and the convergence ladder
+   Same treatment as the mills diagrams above: a wide viewBox carrying small
+   type, so below about 760px the figure scrolls at a readable size rather than
+   scaling down to nothing. */
+.cr-fig { display: block; width: 100%; min-width: 760px; height: auto; }
+.cr-frame { fill: none; stroke: var(--rule-accent); stroke-width: 1.5; }
+.cr-dep { fill: var(--gold); opacity: .92; }
+.cr-res { fill: var(--accent); }
+.cr-line { fill: none; stroke: var(--accent-d); stroke-width: 2; }
+.cr-earn rect { fill: var(--accent-tint); stroke: var(--rule-accent); stroke-width: 1; }
+
+.lad-head { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+            fill: var(--ink-3); }
+.lad-ax { font-family: var(--mono); font-size: 10.5px; fill: var(--ink-3); }
+.lad-grid { stroke: var(--rule-2); stroke-width: 1; }
+.lad-k { font-family: var(--serif); font-size: 15.5px; font-weight: 800;
+         letter-spacing: -.01em; fill: var(--ink); }
+.lad-g { font-family: var(--sans); font-size: 11.5px; fill: var(--ink-3); }
+.lad-span { stroke: var(--rule-accent); stroke-width: 7; stroke-linecap: round; }
+.lad-v { font-family: var(--mono); font-size: 16px; font-weight: 600; fill: var(--accent-d); }
+.lad-leg { font-family: var(--sans); font-size: 12px; fill: var(--ink-3); }
+
+/* The hidden-capex bars: what the fleet absorbed, against what the cash flow
+   statement calls capital expenditure. Gold is the reported figure, because on
+   this site gold is always the number that is not telling the whole story. */
+.fc-real { fill: var(--accent); }
+.fc-rep { fill: var(--gold); }
+
+/* ---------- revenue per ton, and the disposal split ---------- */
 .perton { min-width: 460px; }
+/* Five columns of it, so the headers wrap onto two lines and the figures never
+   do. Without that the last column, which carries the whole point of the
+   exhibit, is the one pushed off the edge on a narrow screen. */
+.dsp { min-width: 560px; }
+.dsp td { white-space: nowrap; }
+.dsp thead th { white-space: normal; line-height: 1.3; vertical-align: bottom; }
+.dsp .dsp-b { background: var(--wash-accent); color: var(--ink); font-weight: 600; }
 .perton caption { caption-side: top; text-align: left; padding: 0 0 10px;
                     font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
                     text-transform: uppercase; color: var(--ink-3); }
@@ -694,12 +729,16 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 .seg p { margin: 0; color: var(--ink-2); max-width: 72ch; }
 
 /* ---------- appendix ----------
-   Thirteen tables stacked down one page. With table-layout:auto each sizes its
-   own columns from its own content, so a block of percentages and a block of
-   day-counts disagree about where every column sits and nothing lines up.
-   Fixing the layout gives all of them one shared grid. */
+   Fifty small tables stacked down one page, one per measure, rows being the
+   companies and the industry. With table-layout:auto each would size its own
+   columns from its own content, so a table of percentages and a table of
+   day-counts would disagree about where every column sits and nothing would
+   line up down the page. Fixing the layout gives all of them one shared grid,
+   which is what makes the stack scannable. */
 .ap table { table-layout: fixed; min-width: 780px; }
-.ap th.rl, .ap th.rl2 { width: 27%; }
+/* Narrower than the company-first version needed: these are company names, not
+   metric labels, so the years get the room instead. */
+.ap th.rl, .ap th.rl2 { width: 19%; }
 /* Denser than the narrative tables: a reference page earns its keep by fitting
    eight years across without a scrollbar, and growth rates run to four figures. */
 .ap td, .ap th.rl2 { padding: 5px 9px; }
@@ -717,6 +756,36 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 .ap td.last, .ap thead th.last { background: var(--wash-accent); color: var(--ink); }
 .ap td.last { font-weight: 600; }
 .ap tr:hover td.last { background: var(--accent-tint); }
+/* The aggregate is the benchmark the other rows are read against, not a fourth
+   competitor, so it sits under a rule at the foot of every table rather than
+   in the run of them. */
+.ap tr.agg th.rl2, .ap tr.agg td { border-top: 1px solid var(--rule);
+                                   background: var(--paper-2); }
+.ap tr.agg th.rl2 { font-weight: 600; color: var(--ink); }
+.ap tr.agg td.last { background: var(--accent-tint); }
+.ap tr.agg:hover td.last { background: #d5ece3; }
+
+/* Follow one company down the page. The rail ships hidden and app.js reveals
+   it, so a reader without JS gets every row rather than a dead control. */
+.trace { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+         margin: 16px 0 4px; }
+.tr-k { font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
+        text-transform: uppercase; color: var(--ink-3); margin-right: 4px; }
+.tr-chip { font: inherit; font-size: 12.5px; line-height: 1; cursor: pointer;
+           padding: 7px 12px; border-radius: 999px; color: var(--ink-2);
+           background: #fff; border: 1px solid var(--rule); }
+.tr-chip:hover { border-color: var(--rule-accent); color: var(--accent-d); }
+.tr-chip[aria-pressed="true"] { background: var(--accent-d); color: #fff;
+                                border-color: var(--accent-d); font-weight: 600; }
+.tr-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* The traced company and the benchmark stay lit; the rest step back. Opacity
+   rather than display, so the table keeps its shape and a reader can see what
+   is being held back. The match is marked by app.js as a class, because CSS
+   cannot compare an element's attribute against an ancestor's. */
+.lf-body[data-trace] .ap tbody tr:not(.agg):not(.on) { opacity: .3; }
+.lf-body[data-trace] .ap tbody tr.on th.rl2 { color: var(--accent-d); font-weight: 600; }
+.ap tbody tr[data-co]:not(.agg) th.rl2 { cursor: pointer; }
+.ap tbody tr[data-co]:not(.agg):hover th.rl2 { color: var(--accent-d); }
 .ap tbody tr:hover th.rl2 { background: var(--accent-tint); }
 
 .ap-h { font-family: var(--serif); font-size: 15px; font-weight: 800; text-transform: none;

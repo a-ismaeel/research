@@ -227,6 +227,53 @@
     });
   }
 
+  /* ---------------- appendix: follow one company ----------------
+     The appendix is metric-first, so one company's line runs across fifty
+     tables instead of down one. This dims the others on every table at once
+     and leaves the industry row alone, because the aggregate is the point of
+     comparison rather than a competitor. The rail is hidden in the markup and
+     revealed here, so a reader without JS gets all rows rather than a control
+     that does nothing. */
+  var trace = document.getElementById('trace');
+  var apBody = trace && trace.closest('.lf-body');
+  if (trace && apBody) {
+    trace.hidden = false;
+    var chips = [].slice.call(trace.querySelectorAll('.tr-chip'));
+
+    function setTrace(co) {
+      if (co) apBody.setAttribute('data-trace', co);
+      else apBody.removeAttribute('data-trace');
+      // CSS cannot compare a row's data-co against an ancestor's data-trace,
+      // so the match is marked here.
+      apBody.querySelectorAll('.ap tbody tr[data-co]').forEach(function (r) {
+        r.classList.toggle('on', !!co && r.getAttribute('data-co') === co);
+      });
+      chips.forEach(function (c) {
+        var on = (c.getAttribute('data-co') || '') === (co || '');
+        c.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+
+    trace.addEventListener('click', function (e) {
+      var c = e.target.closest('.tr-chip');
+      if (!c) return;
+      var co = c.getAttribute('data-co') || '';
+      // Clicking the active company again clears it, same as the scoreboard.
+      setTrace(apBody.getAttribute('data-trace') === co ? '' : co);
+    });
+
+    // Clicking a company's name inside any table is the same gesture. The
+    // chips carry the keyboard path, so these rows take no tab stop.
+    apBody.addEventListener('click', function (e) {
+      var th = e.target.closest('.ap tbody tr[data-co] th.rl2');
+      if (!th) return;
+      var row = th.parentNode;
+      if (row.classList.contains('agg')) return;
+      var co = row.getAttribute('data-co');
+      setTrace(apBody.getAttribute('data-trace') === co ? '' : co);
+    });
+  }
+
   /* ---------------- chart hover ---------------- */
   function fmt(v, f) {
     if (v === null || v === undefined) return 'n/a';
