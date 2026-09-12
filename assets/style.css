@@ -46,6 +46,17 @@
   --sans:    "Archivo Variable", ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   --mono:    "Spline Sans Mono Variable", ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
   --maxw:    1180px;
+  /* The One Prose Measure, in pixels rather than ch.
+     DESIGN.md states the rule as "74-76ch", and every text block used to
+     declare its own ch value. But ch resolves against the element's own font
+     size, so 82ch of 12px note, 72ch of 12.5px caption, 76ch of 15px prose and
+     62ch of 17px lead are four different widths: the column ended up with
+     eight ragged right edges from a single stated rule. One number, applied
+     everywhere, is the same rule actually kept. 604px is what 76ch of 15px
+     Archivo measured, so the body copy is unchanged and everything else now
+     agrees with it. Re-measure if the body font or size ever changes. */
+  --measure-full: 604px;
+  --measure: var(--measure-full);
   --radius:  8px;
   --radius-sm: 4px;
 }
@@ -70,6 +81,18 @@ a:hover { text-decoration: underline; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+/* ---------- reading progress ----------
+   The masthead scrolls away rather than sticking, so the bar has nothing to
+   hang under and pins to the viewport instead. Above .tocbar (z-index 30),
+   which is the only other thing sitting at top:0, and above .navtoggle's 60 so
+   the 2px line is unbroken across the width. Width is set from app.js; with JS
+   off it stays at 0 and the line never appears, which is the right failure. */
+.readbar {
+  position: fixed; top: 0; left: 0; z-index: 70;
+  width: 0; height: 2px; background: var(--accent);
+  transition: width .1s linear;
+}
 
 /* ---------- masthead ---------- */
 .masthead {
@@ -159,9 +182,9 @@ h2 { font-family: var(--serif); font-size: 21px; font-weight: 700; letter-spacin
 h3 { font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
      font-family: var(--mono); color: var(--ink-2); margin: 26px 0 8px; }
 p { margin: 0 0 13px; text-wrap: pretty; }
-.lede { font-size: 16.5px; line-height: 1.68; color: var(--ink); max-width: 74ch; }
+.lede { font-size: 16.5px; line-height: 1.68; color: var(--ink); max-width: var(--measure); }
 .meta { font-size: 12.5px; color: var(--ink-3); margin-top: 2px; font-family: var(--mono); }
-.prose { max-width: 76ch; }
+.prose { max-width: var(--measure); }
 .prose p { color: var(--ink-2); }
 
 .tag {
@@ -228,7 +251,7 @@ tr.spacer td { border-bottom: none; padding: 7px 0 0; }
 tr.spacer:hover td { background: none; }
 .blk { margin: 24px 0 8px; }
 .blk h3 { margin-bottom: 6px; }
-.note { font-size: 12px; color: var(--ink-3); max-width: 82ch; margin: 4px 0 0; }
+.note { font-size: 12px; color: var(--ink-3); max-width: var(--measure); margin: 4px 0 0; }
 .note.flush { max-width: none; }
 .unit { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: .02em; }
 .badge { display: inline-block; font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em;
@@ -253,6 +276,37 @@ tr.spacer:hover td { background: none; }
    width instead would only trade the height problem for an empty margin. */
 .figure { border: 1px solid var(--rule); border-radius: var(--radius); background: #fff;
           padding: 14px 16px 10px; margin: 0; }
+
+/* ---------- prose claims tied to a chart series ----------
+   A phrase in the body text that names a series, and on hover or focus pulls
+   that series out of the chart below it.
+
+   A span carrying role="button" and a tab stop, not a real <button>. Chrome
+   blockifies a button to inline-block no matter what display this rule asks
+   for, and an atomic inline cannot break mid-phrase: that added a line to the
+   spread paragraph at every width measured between 320 and 900px, and the
+   copy was not to move. display:contents restores the wrapping but generates
+   no box, which leaves the focus ring with nothing to paint on. A span is a
+   real inline and gives up neither.
+
+   Nothing here resets a button's chrome because there is none to reset. The
+   dotted underline is the only affordance, and it is the one prose already
+   uses for a term with something behind it. */
+.claim {
+  cursor: pointer;
+  text-decoration: underline dotted var(--rule-accent);
+  text-underline-offset: 3px; text-decoration-thickness: 1px;
+}
+.claim:hover { text-decoration-color: var(--accent); }
+/* The global :focus-visible rule draws the ring; this only keeps it off the
+   descenders of the line above when a claim wraps. */
+.claim:focus-visible { outline-offset: 1px; border-radius: 2px; }
+
+/* The dimming itself: driven entirely by two attributes app.js toggles, so a
+   chart with series the prose has never heard of needs no rule of its own. */
+.chartbox [data-series] { transition: opacity .18s ease; }
+.chartbox[data-dim] [data-series] { opacity: .22; }
+.chartbox[data-dim] [data-series][data-on] { opacity: 1; }
 
 /* hover read-out */
 .chartbox { position: relative; }
@@ -315,9 +369,12 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
    sections under it carry the industry's own detail. Reading only the spine
    paragraphs is meant to be a complete, if shallow, pass over the argument. */
 .sec.spine { margin-bottom: 34px; }
-.sec.spine .lead { font-size: 17px; color: var(--ink); max-width: 62ch; }
+.sec.spine .lead { font-size: 17px; color: var(--ink); max-width: var(--measure); }
 .sec.kid { margin-bottom: 38px; padding-left: 20px;
-           border-left: 2px solid var(--rule-2); }
+           border-left: 2px solid var(--rule-2);
+           /* Indented for hierarchy, so its text has to start 22px later and
+              still stop on the same right edge as everything above it. */
+           --measure: calc(var(--measure-full) - 22px); }
 .sec.kid > h3:first-child { margin-top: 0; }
 
 /* ---------- section rail ----------
@@ -369,7 +426,7 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 /* ---------- explanatory diagrams ---------- */
 .fig { margin: 26px 0 0; }
 .fig svg { width: 100%; height: auto; display: block; }
-.fig figcaption { font-size: 12.5px; color: var(--ink-3); max-width: 72ch; margin-top: 10px; }
+.fig figcaption { font-size: 12.5px; color: var(--ink-3); max-width: var(--measure); margin-top: 10px; }
 .d-lay rect { fill: var(--accent); }
 .d-lay rect:first-child { fill: var(--accent-d); }
 .d-lay rect:last-child { fill: var(--wash-accent); stroke: var(--rule-accent); }
@@ -457,9 +514,12 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 
 /* ---------- closing panel and buttons ---------- */
 .endcard { background: var(--wash-accent); border: 1px solid var(--rule-accent);
-           border-radius: var(--radius); padding: 26px 28px; }
+           border-radius: var(--radius); padding: 26px 28px;
+           /* Padded panel, so its text starts 29px in and needs the same
+              inset measure as .sec.kid to stop on the column's text edge. */
+           --measure: calc(var(--measure-full) - 29px); }
 .endcard h2 { border: 0; margin: 0 0 8px; padding: 0; }
-.endcard p { color: var(--ink-2); max-width: 62ch; }
+.endcard p { color: var(--ink-2); max-width: var(--measure); }
 .btn { display: inline-block; margin-top: 6px; margin-right: 10px;
        background: var(--accent-d); color: #fff; padding: 10px 18px;
        border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 600;
@@ -475,8 +535,11 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 .indcard { display: block; background: #fff; border: 1px solid var(--rule);
            border-radius: var(--radius); padding: 22px 24px; color: inherit;
            transition: border-color .15s ease, box-shadow .15s ease; }
-.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
-                 box-shadow: 0 3px 14px rgba(21,37,40,.07); }
+/* Scoped to the anchor: a forthcoming sector wears .indcard on a div, and a
+   card with nothing behind it must not light up under the cursor. Every
+   published card is an <a>, so this changes nothing that is clickable. */
+a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
+                  box-shadow: 0 3px 14px rgba(21,37,40,.07); }
 .ind-emo { font-size: 26px; line-height: 1; margin-bottom: 12px; }
 .indcard h3 { font-family: var(--serif); font-size: 19px; font-weight: 800;
               text-transform: none; letter-spacing: -.01em; color: var(--ink); margin: 0 0 8px; }
@@ -485,22 +548,6 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
           text-transform: uppercase; color: var(--accent-d); }
 .indcard.soon-card { opacity: .6; }
 .indcard.soon-card .ind-go { color: var(--ink-3); }
-
-/* Unpublished sectors: the card's vocabulary at chip scale. Two dozen of these
-   sit under one live piece, so they have to read as a roster, not as content. */
-.soon-h { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em;
-          text-transform: uppercase; color: var(--ink-3); margin: 34px 0 6px; }
-.soongrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
-            gap: 8px; margin-top: 14px; }
-.soonchip { display: flex; align-items: center; gap: 10px; min-width: 0;
-            background: #fff; border: 1px solid var(--rule-2);
-            border-radius: var(--radius-sm); padding: 9px 12px; }
-.sc-emo { font-size: 15px; line-height: 1; flex: none; filter: saturate(.85); opacity: .8; }
-.sc-n { font-size: 12.5px; color: var(--ink-2); line-height: 1.3; }
-@media (max-width: 620px) {
-  .soongrid { grid-template-columns: 1fr 1fr; }
-  .sc-n { font-size: 12px; }
-}
 
 .dcount { margin-left: auto; font-family: var(--mono); font-size: 9px;
           letter-spacing: .1em; color: #8e99a4; }
@@ -534,7 +581,7 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 .step-body h3 { font-family: var(--serif); font-size: 19px; font-weight: 800;
                 text-transform: none; letter-spacing: -.01em; color: var(--ink);
                 margin: 3px 0 5px; }
-.step-body p { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 58ch; }
+.step-body p { margin: 0; color: var(--ink-2); font-size: 14px; max-width: var(--measure); }
 
 .seq-end { display: flex; align-items: center; gap: 14px; padding-left: 0;
            margin-top: 4px; font-size: 13.5px; color: var(--ink-2); }
@@ -726,7 +773,7 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 .seg:first-child { border-top: 0; padding-top: 6px; }
 .seg h3 { font-family: var(--serif); font-size: 17px; font-weight: 800; text-transform: none;
           letter-spacing: -.01em; color: var(--accent-d); margin: 0 0 6px; }
-.seg p { margin: 0; color: var(--ink-2); max-width: 72ch; }
+.seg p { margin: 0; color: var(--ink-2); max-width: var(--measure); }
 
 /* ---------- appendix ----------
    Fifty small tables stacked down one page, one per measure, rows being the
@@ -869,7 +916,9 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 @media print {
   .hero { background: none; color: var(--ink); padding: 10px 0; }
   .hero h1, .thesis, .hero-meta, .hero .crumb { color: var(--ink); }
-  .toc, .navtoggle, .btn { display: none; }
+  .toc, .navtoggle, .btn, .readbar { display: none; }
+  /* A claim is a reading aid, not a citation: on paper it is just its words. */
+  .claim { text-decoration: none; }
   .lf { grid-template-columns: 1fr; }
   .opcard:hover, .indcard:hover { box-shadow: none; }
 }
@@ -877,7 +926,11 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 /* ---------- reduced motion ----------
    Switching tabs scrolls the page and the tab strip. Someone who has asked the
    OS for less movement still gets every state change, just without the travel.
-   app.js checks the same query before its two programmatic scrolls. */
+   app.js checks the same query before each of its programmatic scrolls.
+
+   The blanket transition-duration below is what drops the reading bar's width
+   transition and the chart dimming's fade. Both keep updating: only the tween
+   between the old value and the new one goes. */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {

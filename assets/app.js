@@ -1,4 +1,5 @@
-// Side drawer, section rail, scoreboard column focus, chart hover read-out.
+// Reading progress, side drawer, section rail, scoreboard column focus,
+// prose claims, chart hover read-out.
 (function () {
   /* Honour the OS "reduce motion" setting for programmatic scrolls. A CSS media
      query cannot override a behavior passed in JS, so the query is read here.
@@ -6,6 +7,45 @@
   function motionOK() {
     return !window.matchMedia ||
            !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  /* ---------------- reading progress ----------------
+     How far down the piece you are, as a 2px rule across the top of the
+     viewport. These pages run long and the rail only says which section you
+     are in, not how much of the whole is left.
+
+     Passive listener into one rAF, because this fires on every scroll tick and
+     reading window.scrollY inside the frame keeps the layout read out of the
+     event handler. Drawn once immediately as well: a reload restores the old
+     scroll position without firing a scroll event, and a bar that reads zero
+     two thirds of the way down a page is worse than no bar. */
+  var readbar = document.querySelector('.readbar');
+  if (readbar) {
+    var queued = false;
+
+    function drawProgress() {
+      queued = false;
+      var d = document.documentElement;
+      var max = d.scrollHeight - window.innerHeight;
+      var pos = window.pageYOffset || d.scrollTop || 0;
+      var pct = max > 0 ? (pos / max) * 100 : 0;
+      readbar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    }
+
+    function queueProgress() {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(drawProgress);
+    }
+
+    window.addEventListener('scroll', queueProgress, { passive: true });
+    // The denominator moves when the viewport does, and on the sheet
+    // breakpoints the page height changes with it.
+    window.addEventListener('resize', queueProgress, { passive: true });
+    drawProgress();
+    // Fonts and images landing after this script runs change scrollHeight, and
+    // scroll restoration can arrive after it too.
+    window.addEventListener('load', drawProgress);
   }
 
   /* ---------------- side drawer ---------------- */
@@ -273,6 +313,79 @@
       setTrace(apBody.getAttribute('data-trace') === co ? '' : co);
     });
   }
+
+  /* ---------------- prose claims ----------------
+     A sentence that names a series, wired to the series it names. Hovering or
+     focusing the phrase drops everything else in the chart back and leaves
+     that one line at full strength, so the reader does not have to find it in
+     a legend first.
+
+     Generic on purpose: this knows nothing about ROIC or any other series. A
+     claim carries the chart's id and a series key, the chart carries groups
+     tagged with the same keys, and all this does is toggle two attributes.
+     The dimming itself is in the stylesheet.
+
+     data-chart takes one id or several separated by spaces. Several, because a
+     section can answer one question with a panel per company, and a claim
+     about "what that capital costs" is a claim about all of them.
+
+     Note the collision of names: .chartbox also carries a data-chart, holding
+     the hover payload. Different element, different meaning. */
+  document.querySelectorAll('.claim[data-chart][data-series]').forEach(function (btn) {
+    var key = btn.getAttribute('data-series');
+    var boxes = (btn.getAttribute('data-chart') || '').split(/\s+/)
+      .filter(Boolean)
+      .map(function (id) { return document.getElementById(id); })
+      .filter(Boolean);
+    // A claim pointing at a chart that is not on this page stays inert rather
+    // than becoming a control that does nothing when pressed.
+    if (!boxes.length) return;
+
+    function lift() {
+      boxes.forEach(function (box) {
+        box.setAttribute('data-dim', '');
+        box.querySelectorAll('[data-series]').forEach(function (g) {
+          if (g.getAttribute('data-series') === key) g.setAttribute('data-on', '');
+          else g.removeAttribute('data-on');
+        });
+      });
+    }
+
+    function drop() {
+      boxes.forEach(function (box) {
+        box.removeAttribute('data-dim');
+        box.querySelectorAll('[data-on]').forEach(function (g) {
+          g.removeAttribute('data-on');
+        });
+      });
+    }
+
+    btn.addEventListener('mouseenter', lift);
+    btn.addEventListener('focus', lift);
+    btn.addEventListener('mouseleave', drop);
+    btn.addEventListener('blur', drop);
+
+    /* Narrow enough and the chart is below the fold rather than beside the
+       sentence, so the highlight happens somewhere the reader cannot see.
+       880px is where .grid2 and .grid3 already give up their columns. */
+    function activate() {
+      if (window.innerWidth >= 880) return;
+      lift();
+      boxes[0].scrollIntoView({
+        behavior: motionOK() ? 'smooth' : 'auto', block: 'center',
+      });
+    }
+
+    btn.addEventListener('click', activate);
+    /* A claim is a span with a button role, so the keyboard activation a real
+       <button> would have given for free is wired here. Space is prevented
+       first: on a span it scrolls the page instead of pressing anything. */
+    btn.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+      e.preventDefault();
+      activate();
+    });
+  });
 
   /* ---------------- chart hover ---------------- */
   function fmt(v, f) {
