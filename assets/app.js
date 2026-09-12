@@ -1,5 +1,5 @@
 // Reading progress, side drawer, section rail, scoreboard column focus,
-// prose claims, chart hover read-out.
+// prose claims, build stack progress, chart hover read-out.
 (function () {
   /* Honour the OS "reduce motion" setting for programmatic scrolls. A CSS media
      query cannot override a behavior passed in JS, so the query is read here.
@@ -386,6 +386,60 @@
       activate();
     });
   });
+
+  /* ---------------- the build stack: how much is paid for ----------------
+     Stack-only, because only the stack is a sequence.
+
+     Highlighting a company from the prose is not here: every figure on the
+     page uses the prose-claim handler above, which already carries pointer,
+     keyboard and touch. There is one mechanism for that gesture and this is
+     not it. */
+  var stk = document.querySelector('.stk');
+  if (stk) {
+    var stages = [].slice.call(stk.querySelectorAll('.stage'));
+
+    var reached = 1;
+
+    function paint(n) {
+      if (n === reached) return;
+      reached = n;
+      stages.forEach(function (s, i) { s.classList.toggle('built', i < n); });
+    }
+
+    /* The stage being read is the last one whose top has crossed a line a
+       little above the middle of the viewport, which is roughly where a
+       reader is actually looking. Read off the rects rather than from an
+       IntersectionObserver: a stage is tall enough that the band an observer
+       would need is narrow, and a fast scroll or a jump to an anchor can step
+       straight over a narrow band and leave the count behind. Five rect reads
+       inside one rAF is cheaper than being wrong.
+
+       Above the figure nothing has crossed, so it holds at stage one; below it
+       everything has, so it holds at five. Scrolling back up rolls the
+       count back, because the stack is only as built as the part you have
+       read. */
+    var qd = false;
+
+    function readStage() {
+      qd = false;
+      var line = window.innerHeight * 0.38;
+      var n = 1;
+      for (var i = 0; i < stages.length; i++) {
+        if (stages[i].getBoundingClientRect().top <= line) n = i + 1;
+      }
+      paint(n);
+    }
+
+    function queueStage() {
+      if (qd) return;
+      qd = true;
+      requestAnimationFrame(readStage);
+    }
+
+    window.addEventListener('scroll', queueStage, { passive: true });
+    window.addEventListener('resize', queueStage, { passive: true });
+    readStage();
+  }
 
   /* ---------------- chart hover ---------------- */
   function fmt(v, f) {

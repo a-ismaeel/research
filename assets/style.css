@@ -268,7 +268,10 @@ tr.spacer:hover td { background: none; }
           margin-top: 2px; padding-left: 62px; }
 .lg { display: inline-flex; align-items: center; gap: 6px; }
 .lg i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
-.lg i.ln { height: 3px; border-radius: 0; }
+/* A line series draws its own swatch: same dash, same marker as the chart, so
+   the legend can be read without separating two hues. */
+.lg .lgs { display: inline-block; vertical-align: -1px; flex: none;
+           width: 24px; height: 12px; }
 /* An SVG chart scales to its container, so a full-width figure is also a tall
    one: a 720x300 viewBox stretched to 1100px stands 470px high. The fix is the
    aspect ratio, not the width. Standalone charts are drawn on a wide, short
@@ -343,10 +346,14 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 /* ---------- hero: the brand actually showing up ----------
    The old site used the green as a 5% accent and read as grey. A publication
    gets one chance to say whose it is, so the opening band commits to it. */
-.hero { background: var(--accent-d); color: #fff; padding: 40px 0 44px; }
+/* Tighter than it was. The thesis is capped at the prose measure inside a
+   full-width band, so every pixel of band height is a pixel of empty green
+   to the right of it: the cheapest thing this section can do for a reader
+   is be shorter. */
+.hero { background: var(--accent-d); color: #fff; padding: 26px 0 30px; }
 .hero.tall { padding: 78px 0 84px; }
 .hero.slim { padding: 30px 0 34px; }
-.hero h1 { color: #fff; font-size: clamp(30px, 4.4vw, 46px); margin-bottom: 12px; }
+.hero h1 { color: #fff; font-size: clamp(28px, 3.6vw, 38px); margin-bottom: 9px; }
 .hero .promise { font-size: clamp(34px, 5.6vw, 60px); max-width: 20ch; letter-spacing: -.03em; }
 .hero .crumb, .hero .crumb a { color: rgba(255,255,255,.72); }
 .hero .crumb a:hover { color: #fff; }
@@ -376,6 +383,19 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
               still stop on the same right edge as everything above it. */
            --measure: calc(var(--measure-full) - 22px); }
 .sec.kid > h3:first-child { margin-top: 0; }
+
+/* A child section whose figure belongs beside its prose rather than under it.
+   The drawing stays in view while the paragraph explaining it is read, which
+   is the whole reason for the arrangement, so the text column is held to the
+   prose measure and the figure takes what is left. 880px is where .grid2 and
+   .grid3 already give up their columns, and the markup is in reading order, so
+   folding costs nothing. */
+.kid-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .92fr);
+             gap: 30px; align-items: start; }
+.kid-split > .fig { margin-top: 6px; }
+@media (max-width: 880px) {
+  .kid-split { grid-template-columns: 1fr; gap: 0; }
+}
 
 /* ---------- section rail ----------
    The spine: the same seven questions on every industry, with that industry's
@@ -588,6 +608,202 @@ a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
 .seq-badge { display: inline-block; background: var(--accent-d); color: #fff;
              font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em;
              text-transform: uppercase; padding: 7px 14px; border-radius: 999px; }
+
+/* ---------- the build stack ----------
+   The sequence figure's wider sibling, and the only one on the site that runs
+   three columns. A stage reads left to right: the marker, what the stage means
+   in any market of this kind, and what the cohort actually did at it, closing
+   on what still cannot be sold. Then down to the next stage, separated by a
+   dashed rule that costs nothing because it is the stage's own border.
+
+   Everything below degrades to plain content with JS off. The focus control is
+   hidden in the markup and revealed by app.js; the built state is additive, so
+   a stage that never receives it still reads correctly. */
+.stackfig { margin-top: 26px; }
+
+/* ---------- the Z row ----------
+   The shared skeleton under the build stack and the three markets: a marker,
+   the prose that explains the thing, and a picture of it. The eye runs left to
+   right across a row and then drops to the next, which is the only reason the
+   picture can sit beside the paragraph instead of several screens below it.
+   Two figures use it; anything else that wants the same reading order should
+   use it too rather than inventing a third grid. */
+.zlist { list-style: none; margin: 0; padding: 0; }
+.zrow { display: grid; grid-template-columns: 62px minmax(0, 1.22fr) minmax(0, 1fr);
+        column-gap: 24px; padding: 24px 0 26px;
+        border-top: 1px dashed var(--rule-accent); }
+.zrow:first-child { border-top: 0; padding-top: 4px; }
+.zrow:last-child { padding-bottom: 4px; }
+
+.zr-rail { position: relative; }
+.zr-ico { display: grid; place-items: center; width: 54px; height: 54px;
+           border-radius: 50%; background: #fff; border: 1px solid var(--rule-accent);
+           color: var(--accent-d);
+           transition: background .35s ease, color .35s ease, border-color .35s ease; }
+.stg-n { position: absolute; top: -7px; left: 38px; display: grid;
+         place-items: center; width: 22px; height: 22px; border-radius: 50%;
+         background: var(--paper); border: 1px solid var(--rule-accent);
+         font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+         transition: border-color .35s ease, color .35s ease; }
+/* Built: this stage has been read, and on this page that means paid for. The
+   marker fills, which turns scrolling the figure into watching the stack go
+   up, and leaves the unpaid stages visibly ahead of you. */
+.zrow.built .zr-ico { background: var(--accent-d); border-color: var(--accent-d);
+                        color: #fff; }
+.zrow.built .stg-n { border-color: var(--accent-d); color: var(--accent-d); }
+
+.zr-idea { padding-bottom: 6px; min-width: 0; }
+.zr-kicker { font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
+              text-transform: uppercase; color: var(--ink-3); }
+.zr-idea h3 { font-family: var(--serif); font-size: 19px; font-weight: 800;
+               text-transform: none; letter-spacing: -.01em; color: var(--ink);
+               margin: 3px 0 7px; }
+.zr-say { margin: 0; color: var(--ink-2); font-size: 14px; }
+.stg-assets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 13px; }
+.stg-asset { font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+             text-transform: uppercase; color: var(--accent-d);
+             background: var(--wash-accent); border: 1px solid var(--rule-accent);
+             border-radius: 999px; padding: 3px 10px; }
+
+/* A company named inside the paragraph, wired to its row in the chart beside
+   it. Same dotted underline as .claim one section further down, because it is
+   the same promise: this phrase points at something in that picture. */
+.zr-mark { cursor: pointer; text-decoration: underline dotted var(--rule-accent);
+            text-underline-offset: 3px; text-decoration-thickness: 1px;
+            color: var(--accent-d); font-weight: 700; }
+.zr-mark:hover { text-decoration-color: var(--accent); }
+.zr-mark:focus-visible { outline-offset: 1px; border-radius: 2px; }
+
+/* The chart. One row per company, each with a track of its own, so a label can
+   never collide with the company above it and a lit row is a whole line rather
+   than a dot to hunt for. */
+.zr-viz { background: #fff; border: 1px solid var(--rule);
+           border-radius: var(--radius); padding: 14px 18px 16px;
+           align-self: start; min-width: 0; }
+.viz-h { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em;
+         text-transform: uppercase; color: var(--ink-3);
+         padding-bottom: 11px; border-bottom: 1px solid var(--rule-2); }
+.viz-ends { display: flex; justify-content: space-between; gap: 10px;
+            margin: 11px 0 2px 96px; font-family: var(--mono); font-size: 9.5px;
+            letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.viz-rows { list-style: none; margin: 0; padding: 0; }
+.viz-row { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 8px;
+           align-items: center; padding: 9px 0; transition: opacity .18s ease; }
+.viz-lab { min-width: 0; }
+.viz-lab b { display: block; font-family: var(--mono); font-size: 10.5px;
+             font-weight: 400; letter-spacing: .08em; text-transform: uppercase;
+             color: var(--accent-d); }
+.viz-lab em { display: block; font-style: normal; font-size: 11.5px;
+              color: var(--ink-3); line-height: 1.35; }
+.viz-row.bar { grid-template-columns: 96px minmax(0, 1fr) 34px; }
+.viz-pct { font-family: var(--mono); font-size: 11px; color: var(--ink-2);
+           text-align: right; }
+.viz-track { position: relative; height: 18px; }
+/* The bar is a share of that company's own revenue. It is drawn on the same
+   track the dot plot uses, so the two figures read as one family. */
+.viz-bar { position: absolute; left: 0; top: 50%; height: 11px;
+           margin-top: -5.5px; border-radius: 2px; background: var(--accent-d);
+           transition: transform .18s ease; transform-origin: left center; }
+
+/* The three charts are the same chart three times, so they are the same size
+   three times: the panel keeps its own height and the paragraphs are written
+   to finish with it. Stretching the panel to the prose was tried and was
+   wrong, because it gave one exhibit three different heights for no reason a
+   reader could see. */
+
+/* Dashed, because the stops on the build stack are an ordering of three
+   companies and not a measurement of anything. A solid rule would promise a
+   quantity the figure does not have. */
+.viz-track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%;
+                     height: 0; border-top: 1px dashed var(--rule-accent); }
+.viz-dot { position: absolute; top: 50%; width: 13px; height: 13px;
+           margin: -6.5px 0 0 -6.5px; border-radius: 50%;
+           background: var(--accent-d); border: 1px solid var(--accent-d);
+           transition: transform .18s ease; }
+/* No stop at all: the company does not sit on this axis. The empty track is
+   the finding, so it is drawn fainter rather than left looking broken. */
+.viz-row.off .viz-track::before { border-top-style: dotted; opacity: .6; }
+.viz-row.off .viz-lab em { font-style: italic; }
+
+/* Singling a company out is the prose-claim mechanism, the same one the charts
+   further down the page use: .chartbox[data-dim] [data-series] handles the
+   dimming, so there is nothing figure-specific to declare here. All this adds
+   is the bit a generic rule cannot know, which is that a lit row's dot and bar
+   grow a little. */
+.chartbox[data-dim] .viz-row[data-on] .viz-dot { transform: scale(1.45); }
+.chartbox[data-dim] .viz-row[data-on] .viz-bar { transform: scaleY(1.35); }
+
+/* The gate: what a reader still cannot do at the end of a stage. It spans both
+   content columns because it is the verdict on the whole stage, and it is the
+   last thing read before the eye drops to the next one. */
+.stg-gate { grid-column: 2 / -1; margin: 16px 0 0; padding-left: 13px;
+            border-left: 2px solid var(--rule-accent); font-size: 13px;
+            font-style: italic; color: var(--ink-2); }
+/* The one the figure has been building towards. Everything above it was spent;
+   this is the line where the spending is allowed to start coming back, and it
+   is the only badge in the figure for that reason. */
+.stg-gate.final { border-left: 0; padding: 8px 16px; align-self: start;
+                  justify-self: start; border-radius: 999px; font-style: normal;
+                  background: var(--accent-d); color: #fff; font-size: 13px; }
+
+/* A panel holding a chart rather than rows of its own: the chart brings its
+   own margins, so the box does not add a second set. */
+.zr-viz.plain { padding: 10px 8px 6px; }
+.zr-viz.plain .chartbox { margin: 0; }
+.zr-viz.plain svg.chart { display: block; width: 100%; height: auto; }
+/* The unit line under a chart that has no series legend of its own. Sits in
+   the legend row so the panel is the same height as the charts beside it. */
+.lg-note { font-size: 11.5px; color: var(--ink-3); }
+/* The value written above a column, for a total too small to read off its
+   own height. */
+.c-val { font-family: var(--mono); font-size: 11px; fill: var(--ink);
+         font-variant-numeric: tabular-nums; }
+
+/* The three doors on the three questions that separate them, beside the
+   paragraph that opens the section.
+
+   This is a table of words, and every bare table rule on this site is written
+   for a table of numbers: mono, right aligned, tabular figures and, the one
+   that actually breaks things, white-space: nowrap. A prose table has to opt
+   out of all of it explicitly. Without the nowrap override the cells cannot
+   wrap, so table-layout: fixed holds the columns narrow while the text runs
+   straight through the column to its right. */
+.mkspec { border-collapse: collapse; table-layout: fixed; width: 100%;
+          background: #fff; border: 1px solid var(--rule);
+          border-radius: var(--radius); overflow: hidden; font-size: 12.5px; }
+.mkspec th, .mkspec td { padding: 9px 10px; text-align: left;
+                         vertical-align: top; white-space: normal;
+                         overflow-wrap: break-word; font-family: var(--sans);
+                         font-variant-numeric: normal;
+                         border-bottom: 1px solid var(--rule-2); }
+.mkspec tbody tr:last-child th, .mkspec tbody tr:last-child td { border-bottom: 0; }
+/* Not a scrolling data table, so the header does not stick and the rows do not
+   light up under the pointer. */
+.mkspec thead th, .mkspec thead td { position: static; z-index: auto;
+                                     background: var(--wash-accent); }
+.mkspec thead th { font-family: var(--serif); font-size: 13px; font-weight: 800;
+                   letter-spacing: -.01em; color: var(--ink);
+                   text-transform: none; }
+.mkspec tbody th { font-family: var(--mono); font-size: 9.5px; font-weight: 400;
+                   letter-spacing: .1em; text-transform: uppercase;
+                   color: var(--ink-3); width: 72px; }
+.mkspec tbody td { color: var(--ink-2); }
+.mkspec tr:hover th, .mkspec tr:hover td { background: none; }
+.mkspec thead tr:hover th, .mkspec thead tr:hover td { background: var(--wash-accent); }
+
+/* One column. The marker moves inline with the text to stop a 54px circle
+   owning a whole line of a phone screen, and the chart drops below the prose
+   it belongs to. */
+@media (max-width: 860px) {
+  .zrow { grid-template-columns: 46px minmax(0, 1fr); column-gap: 14px; }
+  .zr-idea { grid-column: 2; }
+  .zr-viz, .stg-gate { grid-column: 1 / -1; }
+  .zr-viz { margin-top: 16px; }
+  .zr-ico { width: 46px; height: 46px; }
+  .stg-n { left: 30px; width: 20px; height: 20px; font-size: 10px; }
+  .zr-idea h3 { font-size: 17px; }
+}
+
 
 /* ---------- the three revenue doors ---------- */
 .doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -921,6 +1137,14 @@ a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
   .claim { text-decoration: none; }
   .lf { grid-template-columns: 1fr; }
   .opcard:hover, .indcard:hover { box-shadow: none; }
+  /* The build stack on paper. The chart comes back to full strength, because
+     a printed page has no way to undo a highlight somebody left set, and the
+     markers print as outlines rather than as five solid discs of ink. */
+  .chartbox[data-dim] .viz-row { opacity: 1; }
+  .zrow.built .zr-ico { background: none; color: var(--accent-d);
+                          border-color: var(--rule-accent); }
+  .zrow.built .stg-n { border-color: var(--rule-accent); color: var(--ink-3); }
+  .zrow { break-inside: avoid; page-break-inside: avoid; }
 }
 
 /* ---------- reduced motion ----------
