@@ -86,12 +86,16 @@ a:hover { text-decoration: underline; }
    The masthead scrolls away rather than sticking, so the bar has nothing to
    hang under and pins to the viewport instead. Above .tocbar (z-index 30),
    which is the only other thing sitting at top:0, and above .navtoggle's 60 so
-   the 2px line is unbroken across the width. Width is set from app.js; with JS
-   off it stays at 0 and the line never appears, which is the right failure. */
+   the 2px line is unbroken across the width. The bar is full width and scaled
+   from app.js rather than resized, so scrolling costs a composite rather than a
+   layout; with JS off it stays at scaleX(0) and never appears, which is the
+   right failure. */
 .readbar {
   position: fixed; top: 0; left: 0; z-index: 70;
-  width: 0; height: 2px; background: var(--accent);
-  transition: width .1s linear;
+  width: 100%; height: 2px; background: var(--accent);
+  transform: scaleX(0); transform-origin: 0 50%;
+  transition: transform .1s linear;
+  will-change: transform;
 }
 
 /* ---------- masthead ---------- */
@@ -262,6 +266,13 @@ tr.spacer:hover td { background: none; }
 /* ---------- charts ---------- */
 .chart { width: 100%; height: auto; display: block; }
 .c-ax { font-family: var(--mono); font-size: 10.5px; fill: var(--ink-3); }
+/* A category label under a column, which is a company name rather than a tick
+   mark and is the only thing in the chart saying whose bar that is. Set larger
+   than the ticks because a scaled viewBox renders it at 0.85 on a phone, and
+   9px for a company name is too small to be the label of record. There is no
+   one scale to correct for: the same chart draws at 0.85 on a phone, 0.92 in a
+   desktop split column and 1.5 when the column folds. This is the floor. */
+.c-cat { font-family: var(--mono); font-size: 12.5px; fill: var(--ink-3); }
 .c-title { font-family: var(--mono); font-size: 11.5px; fill: var(--ink-2); font-weight: 600;
            letter-spacing: .05em; text-transform: uppercase; }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: var(--ink-2);
@@ -652,14 +663,26 @@ a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
                         color: #fff; }
 .zrow.built .stg-n { border-color: var(--accent-d); color: var(--accent-d); }
 
-.zr-idea { padding-bottom: 6px; min-width: 0; }
+/* Explicit columns, because a stage can hold more than one pair. With
+   auto-placement the second paragraph would fall into the rail's column; naming
+   the columns lets pair after pair flow down the same two tracks, each panel
+   level with the paragraph it answers. */
+.zr-idea { grid-column: 2; padding-bottom: 6px; min-width: 0; }
+.zr-viz { grid-column: 3; }
+.stg-assets { grid-column: 2; }
+/* The second and later pairs. Same margin on both halves so their tops stay
+   level, which is the whole reason the pair exists. */
+.zr-idea.more, .zr-viz.more { margin-top: 26px; }
 .zr-kicker { font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
               text-transform: uppercase; color: var(--ink-3); }
 .zr-idea h3 { font-family: var(--serif); font-size: 19px; font-weight: 800;
                text-transform: none; letter-spacing: -.01em; color: var(--ink);
                margin: 3px 0 7px; }
 .zr-say { margin: 0; color: var(--ink-2); font-size: 14px; }
-.stg-assets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 13px; }
+/* A stage can run to two paragraphs. Telecom's never do, so the rule above
+   zeroed the margin and nothing noticed until mills split a stage in two. */
+.zr-say + .zr-say { margin-top: 11px; }
+.stg-assets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 .stg-asset { font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
              text-transform: uppercase; color: var(--accent-d);
              background: var(--wash-accent); border: 1px solid var(--rule-accent);
@@ -677,9 +700,13 @@ a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
 /* The chart. One row per company, each with a track of its own, so a label can
    never collide with the company above it and a lit row is a whole line rather
    than a dot to hunt for. */
-.zr-viz { background: #fff; border: 1px solid var(--rule);
+/* .vizbox is the same panel standing on its own, outside a Z row: same box,
+   no grid placement. A stage panel and a figure that happens to use the same
+   drawing should not be two different boxes. */
+.zr-viz, .vizbox { background: #fff; border: 1px solid var(--rule);
            border-radius: var(--radius); padding: 14px 18px 16px;
-           align-self: start; min-width: 0; }
+           min-width: 0; }
+.zr-viz { align-self: start; }
 .viz-h { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em;
          text-transform: uppercase; color: var(--ink-3);
          padding-bottom: 11px; border-bottom: 1px solid var(--rule-2); }
@@ -746,6 +773,93 @@ a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
                   justify-self: start; border-radius: 999px; font-style: normal;
                   background: var(--accent-d); color: #fff; font-size: 13px; }
 
+/* ---------- a stage panel drawn to scale ----------
+   Telecom's panel is one ordering of three companies, so it is one list of
+   rows. A mills panel answers a stage that has two disclosed facts in it more
+   often than one, so it is one or two labelled blocks, each with its own rows,
+   its own key and its own note saying what the track is a share of. That last
+   line is not decoration: a bar scaled to the widest bar in the panel and a
+   bar that is a share of 100% look identical and mean different things, and
+   the block has to say which it is. */
+.viz-block + .viz-block { margin-top: 18px; padding-top: 4px; }
+/* Wider value column than the telecom panel needs: "250k t" and "1.62m" do
+   not fit the 34px a percentage fits in. */
+.viz-block .viz-row.bar { grid-template-columns: 100px minmax(0, 1fr) 52px; }
+/* The second segment of a split bar. Gold against pine is the site's existing
+   pair for "the part that is not the main thing", the same way the policy
+   diagram uses it, and the two segments are separated by a hairline of paper
+   so the seam is visible at any width. */
+.viz-bar.alt { background: var(--gold); border-left: 1.5px solid #fff; }
+.viz-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; }
+.viz-key span { display: inline-flex; align-items: center; gap: 6px;
+                font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
+                text-transform: uppercase; color: var(--ink-3); }
+.viz-key i { width: 12px; height: 8px; border-radius: 2px;
+             background: var(--accent-d); }
+.viz-key i.alt { background: var(--gold); }
+.viz-note { margin: 9px 0 0; font-size: 11.5px; line-height: 1.45;
+            color: var(--ink-3); }
+/* The brands table. A table of words inside a panel of bars, so like .mkspec
+   it has to opt out of every rule written for a table of numbers. */
+.viz-tbl { border-collapse: collapse; table-layout: fixed; width: 100%;
+           margin-top: 11px; font-size: 12.5px; }
+.viz-tbl th, .viz-tbl td { padding: 7px 8px 7px 0; text-align: left;
+                           vertical-align: top; white-space: normal;
+                           overflow-wrap: break-word; font-family: var(--sans);
+                           font-variant-numeric: normal;
+                           border-bottom: 1px solid var(--rule-2); }
+.viz-tbl thead th { position: static; z-index: auto; background: none;
+                    font-family: var(--mono); font-size: 9.5px; font-weight: 400;
+                    letter-spacing: .1em; text-transform: uppercase;
+                    color: var(--ink-3); }
+.viz-tbl tbody th { font-family: var(--mono); font-size: 10.5px; font-weight: 400;
+                    letter-spacing: .08em; text-transform: uppercase;
+                    color: var(--accent-d); width: 42%; }
+.viz-tbl tbody td { color: var(--ink-2); }
+.viz-tbl tbody tr:last-child th, .viz-tbl tbody tr:last-child td { border-bottom: 0; }
+.viz-tbl tr:hover th, .viz-tbl tr:hover td { background: none; }
+/* A brand row is wired to a company the same way a bar row is, so it dims and
+   lifts with the rest of the panel. */
+.chartbox[data-dim] .viz-tbl tbody tr[data-series] { opacity: .32; }
+.chartbox[data-dim] .viz-tbl tbody tr[data-on] { opacity: 1; }
+.chartbox[data-dim] .viz-tbl tbody tr[data-on] th { color: var(--accent-d);
+                                                    font-weight: 600; }
+/* A column value that has to sit above a narrow bar on a small panel: eight
+   of them across 340px. */
+.c-val.sm { font-size: 9.5px; }
+
+/* ---------- the band that closes the build sequence ----------
+   Five stages of things a company builds, and then the one thing it cannot
+   touch. Given its own band rather than a sixth stage because it is not a
+   stage: nobody builds it, and every company in the figure is inside it. */
+.stk-close { margin-top: 6px; padding-top: 24px;
+             border-top: 1px dashed var(--rule-accent); }
+.stk-close svg { display: block; width: 100%; height: auto; }
+.stk-close-cap { max-width: var(--measure); margin: 14px 0 0;
+                 font-size: 12.5px; line-height: 1.55; color: var(--ink-3); }
+/* The sealed market: a wash for the interior, and the outline drawn separately
+   as an open path so the one gateway in it is a real gap in the stroke. */
+.z-field { fill: var(--wash-accent); }
+.z-edge { fill: none; stroke: var(--accent-d); stroke-width: 2.2; }
+/* The price on the gate. Not inside the drawing: it is a sentence, and a
+   sentence set in SVG cannot be selected, cannot reflow and is whatever size
+   the viewBox happens to make it. */
+.stk-toll { display: inline-block; margin: 14px 0 0; padding: 6px 14px;
+            border-radius: 999px; background: var(--wash-accent);
+            border: 1px solid var(--rule-accent); font-family: var(--mono);
+            font-size: 11.5px; color: var(--accent-d); }
+.z-pill { fill: #fff; stroke: var(--rule-accent); stroke-width: 1; }
+.z-pilltx { font-family: var(--mono); font-size: 12px; fill: var(--accent-d); }
+.z-out { fill: var(--accent-d); }
+/* 12px, not 13: "Retail and hypermarkets" measured 144 units inside a 150-unit
+   chip at 13, which is text touching both walls. */
+.z-outtx { font-family: var(--sans); font-size: 12px; font-weight: 600;
+           fill: #fff; }
+/* The barrier across the gateway, and the two stubs of boundary it hangs
+   between. */
+.z-gate line { stroke: var(--accent-d); stroke-width: 2; }
+.d-arrow.dash { stroke-dasharray: 5 4; }
+
 /* A panel holding a chart rather than rows of its own: the chart brings its
    own margins, so the box does not add a second set. */
 .zr-viz.plain { padding: 10px 8px 6px; }
@@ -758,6 +872,9 @@ a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
    own height. */
 .c-val { font-family: var(--mono); font-size: 11px; fill: var(--ink);
          font-variant-numeric: tabular-nums; }
+/* A column that is a true zero. It has no bar, so the word carries it, and it
+   is set back like every other n/a on the site. */
+.c-val.na { fill: var(--ink-3); font-size: 10.5px; }
 
 /* The three doors on the three questions that separate them, beside the
    paragraph that opens the section.
@@ -796,14 +913,35 @@ a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
    it belongs to. */
 @media (max-width: 860px) {
   .zrow { grid-template-columns: 46px minmax(0, 1fr); column-gap: 14px; }
-  .zr-idea { grid-column: 2; }
+  .zr-idea, .stg-assets { grid-column: 2; }
   .zr-viz, .stg-gate { grid-column: 1 / -1; }
+  .zr-idea.more { margin-top: 22px; }
+  .zr-viz.more { margin-top: 16px; }
   .zr-viz { margin-top: 16px; }
   .zr-ico { width: 46px; height: 46px; }
   .stg-n { left: 30px; width: 20px; height: 20px; font-size: 10px; }
   .zr-idea h3 { font-size: 17px; }
 }
 
+
+/* On a phone the fixed label column eats the panel. At 375px the track was
+   down to 43px, which is a bar chart with no room to be a bar chart in: the
+   four bars differed by a handful of pixels and the figure stopped saying
+   anything. Below this width the label takes a line of its own and the track
+   gets the full width of the panel, which is the only thing in the row that
+   actually needs it. */
+@media (max-width: 480px) {
+  .viz-row, .viz-row.bar, .viz-block .viz-row.bar {
+    grid-template-columns: minmax(0, 1fr) 46px;
+    row-gap: 5px;
+  }
+  .viz-lab { grid-column: 1 / -1; display: flex; align-items: baseline;
+             gap: 8px; flex-wrap: wrap; }
+  .viz-lab b, .viz-lab em { display: inline; }
+  .viz-row:not(.bar) .viz-track { grid-column: 1 / -1; }
+  .viz-ends { margin-left: 0; }
+  .viz-h { font-size: 11px; letter-spacing: .1em; }
+}
 
 /* ---------- the three revenue doors ---------- */
 .doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));

@@ -29,7 +29,8 @@
       var max = d.scrollHeight - window.innerHeight;
       var pos = window.pageYOffset || d.scrollTop || 0;
       var pct = max > 0 ? (pos / max) * 100 : 0;
-      readbar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+      readbar.style.transform =
+        'scaleX(' + (Math.max(0, Math.min(100, pct)) / 100) + ')';
     }
 
     function queueProgress() {
