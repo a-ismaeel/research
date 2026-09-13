@@ -332,6 +332,8 @@
 
      Note the collision of names: .chartbox also carries a data-chart, holding
      the hover payload. Different element, different meaning. */
+  /* At most one company is pinned across the whole page. */
+  var pinned = null;
   document.querySelectorAll('.claim[data-chart][data-series]').forEach(function (btn) {
     var key = btn.getAttribute('data-series');
     var boxes = (btn.getAttribute('data-chart') || '').split(/\s+/)
@@ -361,22 +363,37 @@
       });
     }
 
-    btn.addEventListener('mouseenter', lift);
-    btn.addEventListener('focus', lift);
-    btn.addEventListener('mouseleave', drop);
-    btn.addEventListener('blur', drop);
+    /* A pin outranks a hover: passing the cursor over another name must not
+       silently undo the thing the reader deliberately chose. */
+    btn.addEventListener('mouseenter', function () { if (!pinned) lift(); });
+    btn.addEventListener('focus', function () { if (!pinned) lift(); });
+    btn.addEventListener('mouseleave', function () { if (!pinned) drop(); });
+    btn.addEventListener('blur', function () { if (!pinned) drop(); });
 
     /* Narrow enough and the chart is below the fold rather than beside the
        sentence, so the highlight happens somewhere the reader cannot see.
        880px is where .grid2 and .grid3 already give up their columns. */
+    /* Pinning, not just hovering.
+       Hover is a convenience that half the readers do not have. A tap or a
+       click pins the company until it is tapped again or another one is, which
+       is the same gesture on a phone, a tablet and a desktop. The narrow-screen
+       scroll stays, because there the chart is below the sentence. */
     function activate() {
-      if (window.innerWidth >= 880) return;
+      var already = btn.getAttribute('aria-pressed') === 'true';
+      document.querySelectorAll('.claim[aria-pressed="true"]').forEach(
+        function (o) { o.setAttribute('aria-pressed', 'false'); });
+      if (already) { pinned = null; drop(); return; }
+      btn.setAttribute('aria-pressed', 'true');
+      pinned = btn;
       lift();
-      boxes[0].scrollIntoView({
-        behavior: motionOK() ? 'smooth' : 'auto', block: 'center',
-      });
+      if (window.innerWidth < 880) {
+        boxes[0].scrollIntoView({
+          behavior: motionOK() ? 'smooth' : 'auto', block: 'center',
+        });
+      }
     }
 
+    btn.setAttribute('aria-pressed', 'false');
     btn.addEventListener('click', activate);
     /* A claim is a span with a button role, so the keyboard activation a real
        <button> would have given for free is wired here. Space is prevented

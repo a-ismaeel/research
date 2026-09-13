@@ -219,6 +219,17 @@ a.kpi:hover .k { color: var(--accent-d); }
 .kpi .v.pos { color: var(--pos); }
 .kpi .v.neg { color: var(--neg); }
 
+/* The opening block: thesis, then the cohort's four numbers, then a rule.
+   The rule is doing structural work, not decoration. Without it the tiles and
+   the first section's heading read as one run, and a reader cannot tell where
+   the page stops introducing itself and starts arguing. Room after it, because
+   a rule with no space under it is a divider between two things that are still
+   touching. */
+.topmatter { margin: 0 0 56px; padding-bottom: 30px;
+        border-bottom: 2px solid var(--accent-d); }
+.topmatter .kpis { margin: 0; }
+@media (max-width: 780px) { .topmatter { margin-bottom: 40px; padding-bottom: 24px; } }
+
 /* ---------- verdict banner ---------- */
 .verdict { border: 1px solid var(--rule-accent); border-radius: var(--radius);
            background: var(--wash-accent); padding: 16px 20px; margin: 22px 0; }
@@ -407,6 +418,45 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 @media (max-width: 880px) {
   .kid-split { grid-template-columns: 1fr; gap: 0; }
 }
+
+/* The basis of a figure, stated once above it rather than repeated under every
+   panel inside it. */
+.fig-basis { max-width: var(--measure); margin: 0 0 6px; font-size: 13.5px;
+             line-height: 1.55; color: var(--ink-3); }
+
+/* The argument, in one cell, the full width of the tiles under it. It used to
+   run in the hero under the headline, in reversed type over the dark band,
+   which made the one paragraph that carries the whole piece the hardest thing
+   on the page to read.
+
+   The type scales with the box rather than sitting at body size inside it. A
+   paragraph set at 17px across 1,070px runs to about 110 characters a line,
+   which is why every other passage on this site is capped at --measure. The
+   way to fill a band this wide and still keep the line readable is to set it
+   larger, which is what a standfirst is for: it lands near 85 characters at
+   the widest and falls back to body size on a phone. */
+.bottomline { margin: 0 0 40px; padding: 30px 34px;
+              border: 1px solid var(--rule-accent);
+              border-radius: var(--radius); background: var(--wash-accent); }
+.bl-v { margin: 0; font-size: clamp(14.5px, 1.2vw, 15.5px); line-height: 1.7;
+        color: var(--ink); text-wrap: pretty; }
+@media (max-width: 760px) {
+  .bottomline { padding: 20px 18px; }
+  .bl-v { font-size: 16px; line-height: 1.6; }
+}
+
+/* A pinned company stays lit until it is unpinned, on any device. */
+.claim[aria-pressed="true"] { background: var(--accent-d); color: #fff;
+                              border-radius: 3px; padding: 0 4px;
+                              text-decoration: none; }
+
+/* The chart's figures, in the markup and out of the way. Not display:none and
+   not hidden: both would take it out of the accessibility tree, and the point
+   is that a screen reader, a crawler and a summarizer can all reach it. */
+.vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+      overflow: hidden; white-space: nowrap; clip: rect(0 0 0 0);
+      clip-path: inset(50%); border: 0; }
+@media print { .vh { display: none; } }
 
 /* ---------- section rail ----------
    The spine: the same seven questions on every industry, with that industry's
