@@ -843,7 +843,11 @@ a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
 .viz-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; }
 .viz-key span { display: inline-flex; align-items: center; gap: 6px;
                 font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
-                text-transform: uppercase; color: var(--ink-3); }
+                text-transform: uppercase; color: var(--ink-3);
+                /* A two-word company name broke across the chip and its own
+                   second line, which reads as two entries. The row wraps
+                   between entries instead. */
+                white-space: nowrap; }
 .viz-key i { width: 12px; height: 8px; border-radius: 2px;
              background: var(--accent-d); }
 .viz-key i.alt { background: var(--gold); }
