@@ -468,6 +468,9 @@
       case 'num2': return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       case 'x': return v.toFixed(2) + 'x';
       case 'd': return Math.round(v).toLocaleString() + ' days';
+      /* Millions of riyals, for a chart whose values are already divided down.
+         Additive: no existing series names this format. */
+      case 'sarm': return 'SAR ' + Math.round(v).toLocaleString() + 'm';
       default:
         return Math.abs(v) < 100
           ? v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
