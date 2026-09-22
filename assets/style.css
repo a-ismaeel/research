@@ -565,6 +565,13 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 .sb-note { display: block; font-size: 11px; font-weight: 400; color: var(--ink-3);
            letter-spacing: 0; text-transform: none; font-family: var(--sans); }
 .scoreboard thead th { background: var(--paper-2); border-bottom: 1px solid var(--rule); }
+/* The four section headings: financial, cash, operational, other. A label
+   over the rows, not a row to compare, so it reads as furniture. */
+.scoreboard tr.sb-g th { text-align: left; padding: 22px 14px 8px; font-family: var(--mono);
+                         font-size: 10.5px; font-weight: 600; letter-spacing: .08em;
+                         text-transform: uppercase; color: var(--ink-3);
+                         border-bottom: 1px solid var(--rule); }
+.scoreboard tbody tr.sb-g:first-child th { padding-top: 14px; }
 .sb-co { cursor: pointer; }
 .sb-co .sb-n { display: block; font-family: var(--serif); font-size: 15px; font-weight: 800;
                color: var(--ink); }
