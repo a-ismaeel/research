@@ -471,6 +471,8 @@
       /* Millions of riyals, for a chart whose values are already divided down.
          Additive: no existing series names this format. */
       case 'sarm': return 'SAR ' + Math.round(v).toLocaleString() + 'm';
+      /* Whole riyals, for a per-head figure. Additive, like sarm. */
+      case 'sar0': return 'SAR ' + Math.round(v).toLocaleString();
       default:
         return Math.abs(v) < 100
           ? v.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })

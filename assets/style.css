@@ -847,6 +847,11 @@ a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
    diagram uses it, and the two segments are separated by a hairline of paper
    so the seam is visible at any width. */
 .viz-bar.alt { background: var(--gold); border-left: 1.5px solid #fff; }
+/* A bar cut into one segment per company, for a figure whose rows are not
+   companies. The seam is the same paper hairline the split bar uses, and
+   a lit company's segments grow the way a lit row's bar does. */
+.viz-bar.part + .viz-bar.part { border-left: 1.5px solid #fff; }
+.chartbox[data-dim] .viz-bar.part[data-on] { transform: scaleY(1.35); }
 .viz-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; }
 .viz-key span { display: inline-flex; align-items: center; gap: 6px;
                 font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
