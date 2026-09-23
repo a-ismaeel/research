@@ -1430,3 +1430,267 @@ a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
   }
   .card:hover { transform: none; }
 }
+
+/* ==========================================================================
+   Reading layer, September 2026 design pass
+   --------------------------------------------------------------------------
+   One block, appended, so the pass reads as one decision and can be diffed
+   as one. It overrides earlier rules on purpose; where it does, the earlier
+   rule is what the site shipped with before the pass.
+
+   What it does: a text serif for the argument; Archivo's tabular figures
+   (not the mono) for every number; an 11.5px floor for labels; the spread
+   panels, the side-by-side table, the company switcher, previous and next,
+   the source line and defined terms; a shorter masthead on a phone; and a
+   fuller print sheet. Nothing here changes a figure.
+   ========================================================================== */
+
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("fonts/source-serif-4-latin.woff2") format("woff2");
+  font-weight: 400 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("fonts/source-serif-4-latin-italic.woff2") format("woff2");
+  font-weight: 400 600; font-style: italic; font-display: swap;
+}
+
+:root {
+  --prose: "Source Serif 4", "Iowan Old Style", Charter, Georgia, serif;
+  --figs:  "Archivo Variable", ui-sans-serif, "Segoe UI", Helvetica, Arial, sans-serif;
+  --surface: #fff;
+  --ink-prose: #33474b;
+}
+
+/* ---------- figures ---------- */
+/* Lining and tabular on every numeric role, so a column aligns and a 1 is as
+   wide as an 8. Declared by role, not by face, so it survives a font change. */
+td, th, .kpi .v, .kpi .s, .op-f dd, .op-v, .sb-v, .sb-t, .op-tk, .tip,
+svg text, .hero-meta, .meta, .crumb, .toc-sfx, .tocbar-n, .viz-pct, .byline {
+  font-variant-numeric: lining-nums tabular-nums;
+}
+/* Figures move from the mono to Archivo's own tabular figures: still aligned
+   down a column, and the table reads as an exhibit rather than a terminal. */
+td, .sb-v, .op-f dd, .op-v, .kpi .v, .tip .tr b, .tip .th,
+.c-ax, .c-val, .c-cat, .lad-v, .ic-val, .viz-pct, .fp-badge {
+  font-family: var(--figs); letter-spacing: 0;
+}
+td { font-size: 13px; }
+.ap td { font-size: 12.5px; }
+.kpi .v { font-weight: 650; font-size: 24px; letter-spacing: -.01em; white-space: nowrap; }
+@media (max-width: 780px) { .kpi .v { font-size: 19px; } }
+.op-v { font-weight: 700; font-size: 15.5px; }
+.sb-v { font-size: 14px; color: var(--ink); }
+.c-ax { font-size: 11.5px; }
+
+/* ---------- prose ---------- */
+.prose p, .lede, .sec.spine .lead, .bl-v, .verdict p, .endcard p, .seg p,
+.wcard p, .step-body p, .indcard p, .thesis, .zr-idea p, .kid-split p,
+.sec.kid > p, .opcard p, .mcard p, .door p, .arm p, .pending p, .lf-body > .sec > p {
+  font-family: var(--prose); font-optical-sizing: auto;
+  font-variant-numeric: lining-nums proportional-nums; letter-spacing: 0;
+}
+.prose p, .lf-body > .sec > p, .sec.kid > p { font-size: 16.5px; line-height: 1.6; color: var(--ink); }
+.prose p { color: var(--ink-prose); }
+.sec.spine .lead, .lede { font-size: 18px; line-height: 1.55; }
+.bl-v { font-size: clamp(16px, 1.3vw, 17.5px); line-height: 1.6; }
+.thesis { font-size: 19px; line-height: 1.5; }
+.opcard p, .wcard p, .step-body p, .seg p { font-size: 15px; line-height: 1.58; }
+.verdict p, .endcard p { font-size: 16px; }
+/* Beside a figure: one size for every side-by-side paragraph, chosen so the
+   longest on the site (telecom, spectrum) ends above its chart at 1440, 1180
+   and 900px. Measured; re-measure if the copy or the face changes. */
+.zr-idea p, .kid-split p { font-size: 14px; line-height: 1.55; }
+
+/* Heading scale: 34 / 24 / 19 / 16. */
+h2 { font-size: 24px; letter-spacing: -.015em; text-wrap: balance; }
+.zr-idea h3, .step-body h3, .indcard h3 { text-wrap: balance; }
+
+/* ---------- labels ---------- */
+/* An 11.5px floor. The smallest type carries what a reader checks first:
+   which company, which year. Tickers and years are figures, not caps. */
+.op-tk, .sb-t { font-family: var(--figs); font-size: 12.5px; font-weight: 500;
+                letter-spacing: .01em; color: var(--ink-2); }
+.hero-meta, .crumb { font-family: var(--figs); font-size: 13px; letter-spacing: .01em; }
+.crumb { font-size: 12.5px; }
+.kpi .k, .op-k, .st-k, .fp-k, .zr-kicker, .op-role, .viz-h, .toc-g span, .toc-h,
+.step-n, .tr-k, .stg-n, .verdict .lbl, .scoreboard tr.sb-g th, thead th, .dcount,
+.stg-asset { font-size: 11.5px; letter-spacing: .06em; }
+.kpi .s, .sb-note, .lg-note, .note { font-size: 12.5px; }
+.toc-sfx { font-family: var(--figs); font-size: 12px; }
+.kpi .k { overflow: visible; }
+
+/* ---------- tables ---------- */
+/* Row and column read-across; app.js marks the column as .col-on. */
+td.col-on, th.col-on { background: var(--wash-accent); }
+tr:hover td.col-on { background: var(--accent-tint); }
+.scoreboard tbody tr:not(.sb-g):hover th,
+.scoreboard tbody tr:not(.sb-g):hover td { background: var(--wash-accent); }
+
+/* A header that follows the page. position:sticky cannot: .tbl-wrap scrolls
+   sideways and so becomes the sticky container. app.js translates the header
+   by --hy while its table is on screen. */
+table.float-head thead th { transform: translateY(var(--hy, 0px)); position: relative;
+                            z-index: 4; background: var(--paper-2); box-shadow: 0 1px 0 var(--rule); }
+table.float-head.floating thead th { box-shadow: 0 1px 0 var(--rule), 0 6px 10px -8px rgba(21,37,40,.35); }
+.scoreboard.float-head thead th { background: var(--surface); }
+
+.scoreboard th.sb-m { position: sticky; left: 0; background: var(--surface); z-index: 3; }
+.scoreboard thead th.sb-m { z-index: 5; }
+.scoreboard tr.sb-g th { background: var(--paper-2); color: var(--ink); border-color: var(--rule);
+                         font-family: var(--sans); font-size: 12.5px; font-weight: 700;
+                         letter-spacing: .02em; text-transform: none;
+                         padding-top: 20px; padding-bottom: 8px; }
+/* The stronger figure in ink with a hollow ring. Green read as a verdict on
+   the company; ink weight says only what the caption claims. */
+.sb-v.best { color: var(--ink); font-weight: 700; }
+.sb-v.best::after { width: 6px; height: 6px; background: none;
+                    box-shadow: inset 0 0 0 1.5px var(--ink-2); margin-left: 6px; }
+
+/* The appendix corner cell stays with its column on a phone; the rest of the
+   header stays static, as before, so stacked tables do not flicker. */
+.ap thead th.rl { position: sticky; left: 0; z-index: 3; background: var(--paper-2); }
+.ap .tbl-wrap.is-scrolled th.rl2, .ap .tbl-wrap.is-scrolled thead th.rl {
+  box-shadow: 6px 0 8px -6px rgba(21,37,40,.28);
+}
+.ap .blk { scroll-margin-top: 70px; }
+.anchor { margin-left: 8px; font-family: var(--figs); font-weight: 500; font-size: 12.5px;
+          color: var(--ink-3); opacity: 0; transition: opacity .15s ease; }
+.ap .blk:hover .anchor, .anchor:focus-visible { opacity: 1; text-decoration: none; }
+.ap .blk:target h3 { color: var(--accent-d); }
+.ap .blk:target .tbl-wrap { box-shadow: 0 0 0 2px var(--rule-accent); }
+
+/* ---------- cards and tiles ---------- */
+/* No blur spotlight: a reader comparing the cards wants them all sharp. */
+@media (hover: hover) {
+  .opgrid:has(.opcard:hover, .opcard:focus-visible)
+    .opcard:not(:hover):not(:focus-visible) { filter: none; opacity: 1; }
+}
+.opcard, a.indcard {
+  transition: border-color .18s cubic-bezier(.25,1,.5,1), box-shadow .18s cubic-bezier(.25,1,.5,1),
+              transform .18s cubic-bezier(.25,1,.5,1);
+}
+.opcard:hover, a.indcard:hover { transform: translateY(-1px); border-color: var(--accent); }
+
+.kpi { display: flex; flex-direction: column; }
+.kpi-go { margin-top: auto; padding-top: 8px; font-size: 12px; color: var(--accent-d);
+          text-decoration: underline; text-decoration-color: var(--rule-accent);
+          text-underline-offset: 3px; }
+.kpi-go:hover { text-decoration-color: var(--accent); }
+
+.src { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 10px 0 0;
+       font-size: 12.5px; color: var(--ink-3); max-width: none; }
+.src b { font-weight: 600; color: var(--ink-2); }
+.src a { color: var(--accent-d); text-decoration: underline;
+         text-decoration-color: var(--rule-accent); text-underline-offset: 3px; }
+
+.ind-meta { display: block; margin: 0 0 10px; font-size: 12.5px; color: var(--ink-3);
+            font-variant-numeric: tabular-nums; }
+
+/* ---------- defined terms ---------- */
+.def { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help;
+       text-transform: inherit; letter-spacing: inherit;
+       text-decoration: underline dotted var(--ink-3); text-underline-offset: 3px; }
+.def:hover { text-decoration-color: var(--accent); }
+.defpop { position: fixed; inset: auto; margin: 0; width: min(320px, calc(100vw - 32px));
+          padding: 12px 14px; border: 1px solid var(--ink-3); border-radius: var(--radius-sm);
+          background: var(--surface); color: var(--ink); box-shadow: 0 4px 16px rgba(21,37,40,.14);
+          font-family: var(--sans); font-size: 13.5px; line-height: 1.5; }
+.defpop b { display: block; margin-bottom: 3px; }
+.defpop p { margin: 0; color: var(--ink-2); }
+
+/* ---------- spread panels ---------- */
+.spgrid { gap: 18px 22px; }
+.spcard .legend:empty { display: none; }
+.spcard h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.sp-now { font-family: var(--figs); font-size: 13px; font-weight: 600; letter-spacing: 0; }
+.sp-now.pos { color: var(--pos); } .sp-now.neg { color: var(--neg); }
+.sp-now span { font-weight: 500; color: var(--ink-3); }
+.spkey { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px;
+         margin: 14px 0 0; font-size: 12.5px; color: var(--ink-2); }
+.spkey svg { vertical-align: -3px; margin-right: 6px; }
+.spkey-n { color: var(--ink-3); }
+.sp .sp-lbl { font-family: var(--figs); font-size: 12.5px; font-weight: 600;
+              paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+.sp .sp-lbl.w { font-weight: 500; }
+.sp .sp-zero { stroke: var(--ink-3); }
+/* The lines trace once when a panel first scrolls into view. The resting
+   state is the finished chart; app.js adds .sp-in, so print, a headless
+   render and a hidden tab all show it drawn. */
+@keyframes sp-draw { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }
+@keyframes sp-fade { from { opacity: 0; } to { opacity: 1; } }
+.sp.sp-in .sp-roic { stroke-dasharray: var(--len); animation: sp-draw .9s cubic-bezier(.25,1,.5,1) both; }
+.sp.sp-in .sp-wacc { animation: sp-fade .6s .25s cubic-bezier(.25,1,.5,1) both; }
+.sp.sp-in [data-series="spread"] { animation: sp-fade .7s .35s cubic-bezier(.25,1,.5,1) both; }
+
+/* ---------- company switcher, previous and next ---------- */
+.cosw { border-bottom: 1px solid var(--rule); background: var(--paper); }
+.cosw .wrap { display: flex; align-items: center; gap: 4px 6px; flex-wrap: wrap;
+              padding-top: 10px; padding-bottom: 10px; font-size: 13.5px; }
+.cosw-k { color: var(--ink-3); margin-right: 6px; }
+.cosw a { display: inline-flex; align-items: baseline; gap: 6px; padding: 5px 10px;
+          border-radius: 999px; color: var(--ink-2); border: 1px solid transparent; }
+.cosw a:hover { border-color: var(--rule-accent); color: var(--accent-d); text-decoration: none; }
+.cosw a[aria-current] { background: var(--paper-2); color: var(--ink); font-weight: 600; border-color: var(--rule); }
+.cosw a span { font-size: 12px; color: var(--ink-3); font-weight: 500; font-variant-numeric: tabular-nums; }
+.cosw .cosw-x { margin-left: auto; color: var(--accent-d); }
+.cosw .cosw-y { color: var(--accent-d); }
+@media (max-width: 980px) {
+  /* Sticky on a narrow screen, where it also gives the floating menu button
+     a bar to sit on instead of floating over body text. */
+  .cosw { position: sticky; top: 0; z-index: 30; }
+  .cosw .wrap { flex-wrap: nowrap; overflow-x: auto; padding-left: 70px; scrollbar-width: none; }
+  .cosw .wrap::-webkit-scrollbar { display: none; }
+  .cosw a { white-space: nowrap; }
+  .cosw-k, .cosw .cosw-x, .cosw .cosw-y { display: none; }
+}
+.pn { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 44px 0 0; }
+.pn a { display: block; padding: 14px 16px; border: 1px solid var(--rule); border-radius: var(--radius);
+        background: var(--surface); color: var(--ink);
+        transition: border-color .18s ease, transform .18s cubic-bezier(.25,1,.5,1); }
+.pn a:hover { border-color: var(--accent); text-decoration: none; transform: translateY(-1px); }
+.pn a.next { text-align: right; grid-column: 2; }
+.pn small { display: block; font-size: 12px; color: var(--ink-3); margin-bottom: 2px; }
+.pn b { font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
+.pn b span { font-weight: 500; font-size: 13px; color: var(--ink-3); margin-left: 6px; }
+@media (max-width: 560px) { .pn { grid-template-columns: 1fr; } .pn a.next { grid-column: 1; } }
+
+/* ---------- small fixes ---------- */
+/* The stage note drops its 2px left stripe; the italic and indent set it apart. */
+.stg-gate:not(.final) { border-left: 0; padding-left: 0; }
+
+/* ---------- the masthead on a phone ---------- */
+@media (max-width: 640px) {
+  .masthead .wrap { padding-top: 16px; padding-bottom: 10px; gap: 2px 12px;
+                    align-items: center; min-height: 64px; }
+  .masthead .tagline, .masthead .spacer { display: none; }
+  .byline { flex-basis: 100%; font-family: var(--figs); font-size: 12px; margin-top: -2px; }
+  .navtoggle { top: 14px; left: 14px; }
+  .hero.slim { padding: 22px 0 26px; }
+  .thesis { font-size: 17.5px; }
+}
+
+/* ---------- print ---------- */
+@media print {
+  @page { margin: 16mm 14mm 18mm; }
+  body { background: #fff; font-size: 10.5pt; }
+  .cosw, .pn, .drawer, .scrim, .tocbar, .toc-scrim, .trace, .anchor, .kpi-go { display: none !important; }
+  .masthead .wrap { padding-left: 0; }
+  .tbl-wrap { overflow: visible; border-color: #bbb; }
+  table { min-width: 0 !important; }
+  thead { display: table-header-group; }
+  tr, .figure, .spcard, .kpi, .opcard, .chartbox { break-inside: avoid; }
+  h2, h3 { break-after: avoid; }
+  table.float-head thead th { transform: none; box-shadow: none; }
+  .prose a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 8.5pt; color: #555; }
+  body::after { content: "research.aismaeel.com" attr(data-url);
+                display: block; margin-top: 18pt; padding-top: 6pt; border-top: 1px solid #bbb;
+                font-size: 8pt; color: #555; }
+  .sp .sp-ln, .sp [data-series] { animation: none !important; stroke-dasharray: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp.sp-in .sp-roic, .sp.sp-in .sp-wacc, .sp.sp-in [data-series="spread"] { animation: none; }
+  .opcard:hover, a.indcard:hover, .pn a:hover { transform: none; }
+}

@@ -547,4 +547,147 @@
     box.addEventListener('mouseleave', hide);
     box.addEventListener('touchend', hide);
   });
+  /* ---------------- spread panels: draw once on first view ----------------
+     The finished chart is the resting state. This only adds .sp-in, which
+     replays the ROIC line's stroke; with reduced motion nothing is added. */
+  var panels = [].slice.call(document.querySelectorAll('svg.sp'));
+  if (panels.length && 'IntersectionObserver' in window && motionOK()) {
+    panels.forEach(function (svg) {
+      var ln = svg.querySelector('.sp-roic');
+      if (ln && ln.getTotalLength) svg.style.setProperty('--len', Math.ceil(ln.getTotalLength()));
+    });
+    var seen = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('sp-in');
+        seen.unobserve(e.target);
+      });
+    }, { threshold: 0.35 });
+    panels.forEach(function (svg) { seen.observe(svg); });
+  }
+
+  /* ---------------- table headers that follow the page ----------------
+     position:sticky cannot do this: .tbl-wrap scrolls sideways, so it is the
+     sticky container and the header never moves. Any table of eight rows or
+     more outside the appendix gets its header translated while it is on
+     screen, clearing the mobile section bar or the company switcher. */
+  var heads = [].slice.call(document.querySelectorAll('table')).filter(function (t) {
+    return t.tHead && t.tBodies[0] && t.tBodies[0].rows.length >= 8 && !t.closest('.ap, .vh');
+  });
+  if (heads.length) {
+    heads.forEach(function (t) { t.classList.add('float-head'); });
+    var clearance = function () {
+      var o = 0;
+      [document.querySelector('.tocbar'), document.querySelector('.cosw')].forEach(function (b) {
+        if (b && getComputedStyle(b).position === 'sticky' && getComputedStyle(b).display !== 'none') {
+          o = Math.max(o, b.offsetHeight);
+        }
+      });
+      return o;
+    };
+    var queued = false;
+    var place = function () {
+      queued = false;
+      var top = clearance();
+      heads.forEach(function (t) {
+        var r = t.getBoundingClientRect(), hh = t.tHead.offsetHeight;
+        var dy = Math.max(0, Math.min(top - r.top, r.height - hh - 44));
+        t.style.setProperty('--hy', dy + 'px');
+        t.classList.toggle('floating', dy > 0);
+      });
+    };
+    window.addEventListener('scroll', function () {
+      if (!queued) { queued = true; requestAnimationFrame(place); }
+    }, { passive: true });
+    window.addEventListener('resize', place, { passive: true });
+    place();
+  }
+
+  /* ---------------- column read-across ----------------
+     The row already lights on hover; this lights the column, so a reader can
+     answer "which company, which year" without tracing a finger. Rows with a
+     spanning cell (group headings) are left alone. */
+  var lit = [];
+  function spans(row) { return [].some.call(row.cells, function (c) { return c.colSpan > 1; }); }
+  document.addEventListener('mouseover', function (e) {
+    var cell = e.target.closest && e.target.closest('td, th');
+    lit.forEach(function (c) { c.classList.remove('col-on'); });
+    lit = [];
+    if (!cell) return;
+    var tbl = cell.closest('table');
+    if (!tbl || tbl.closest('.vh') || tbl.classList.contains('matrix') ||
+        tbl.classList.contains('mkspec') || spans(cell.parentElement) || cell.cellIndex === 0) return;
+    var i = cell.cellIndex;
+    [].forEach.call(tbl.rows, function (r) {
+      if (spans(r)) return;
+      var c = r.cells[i];
+      if (c) { c.classList.add('col-on'); lit.push(c); }
+    });
+  });
+
+  /* ---------------- appendix on a phone ----------------
+     Every table opens on the reporting year rather than on the first, and the
+     pinned company column takes an edge once the years slide under it. */
+  document.querySelectorAll('.ap .tbl-wrap').forEach(function (w) {
+    w.addEventListener('scroll', function () {
+      w.classList.toggle('is-scrolled', w.scrollLeft > 2);
+    }, { passive: true });
+    if (window.innerWidth <= 780) w.scrollLeft = w.scrollWidth;
+  });
+
+  /* ---------------- company switcher ----------------
+     On a phone the strip scrolls; start it with the current company in view. */
+  var cur = document.querySelector('.cosw [aria-current]');
+  if (cur && cur.parentElement.scrollWidth > cur.parentElement.clientWidth) {
+    cur.parentElement.scrollLeft = cur.offsetLeft - (cur.parentElement.clientWidth - cur.offsetWidth) / 2;
+  }
+
+  /* ---------------- defined terms ----------------
+     A .def button opens its entry from the page's glossary templates in one
+     popover (the popover API, so no scroll container can clip it). Hover and
+     focus open it, a tap toggles it, Escape and a click elsewhere close it. */
+  var pop = null, openBtn = null;
+  function entry(key) { return document.querySelector('template[data-def="' + key + '"]'); }
+  function showDef(btn) {
+    var t = entry(btn.getAttribute('data-def'));
+    if (!t) return;
+    if (!pop) {
+      pop = document.createElement('div');
+      pop.className = 'defpop'; pop.setAttribute('role', 'tooltip'); pop.id = 'defpop';
+      pop.setAttribute('popover', 'manual');
+      document.body.appendChild(pop);
+    }
+    pop.innerHTML = t.innerHTML;
+    if (pop.showPopover) { try { pop.showPopover(); } catch (err) {} } else { pop.style.display = 'block'; }
+    btn.setAttribute('aria-describedby', 'defpop');
+    var r = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    pop.style.left = Math.max(12, Math.min(window.innerWidth - w - 12, r.left)) + 'px';
+    pop.style.top = (r.bottom + 8 + h > window.innerHeight ? r.top - h - 8 : r.bottom + 8) + 'px';
+    openBtn = btn;
+  }
+  function hideDef() {
+    if (!pop || !openBtn) return;
+    if (pop.hidePopover) { try { pop.hidePopover(); } catch (err) {} } else { pop.style.display = 'none'; }
+    openBtn.removeAttribute('aria-describedby');
+    openBtn = null;
+  }
+  var hoverable = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.def');
+    if (b) { e.preventDefault(); if (openBtn === b) hideDef(); else showDef(b); }
+    else if (openBtn && !(e.target.closest && e.target.closest('.defpop'))) hideDef();
+  });
+  document.addEventListener('mouseover', function (e) {
+    var b = hoverable && e.target.closest && e.target.closest('.def');
+    if (b && b !== openBtn) showDef(b);
+  });
+  document.addEventListener('mouseout', function (e) {
+    var b = e.target.closest && e.target.closest('.def');
+    if (b && b === openBtn && !(e.relatedTarget && b.contains(e.relatedTarget))) hideDef();
+  });
+  document.addEventListener('focusin', function (e) {
+    if (e.target.classList && e.target.classList.contains('def')) showDef(e.target);
+  });
+  document.addEventListener('focusout', function (e) { if (e.target === openBtn) hideDef(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideDef(); });
 })();
