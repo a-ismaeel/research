@@ -530,22 +530,48 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 .fig svg .d-s:not([text-anchor]) { fill: var(--ink-3); }
 
 /* ---------- operator cards ---------- */
-.opgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+/* Four columns on every sector, so a card is the same size on the telecom
+   page as on the manpower page; a three-company sector leaves the fourth
+   slot empty rather than widening its cards. Every card carries the same six
+   rows and the name never wraps, so the boxes are the same height by
+   construction, and the spread is pushed to the foot so it lines up too. */
+.opgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 14px; margin-top: 20px; }
-.opcard { display: block; background: #fff; border: 1px solid var(--rule);
-          border-radius: var(--radius); padding: 18px 20px; color: inherit;
+@media (max-width: 1100px) { .opgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .opgrid { grid-template-columns: minmax(0, 1fr); } }
+.opcard { display: flex; flex-direction: column; background: #fff; border: 1px solid var(--rule);
+          border-radius: var(--radius); padding: 16px 16px; color: inherit;
           transition: border-color .15s ease, box-shadow .15s ease; }
 .opcard:hover { text-decoration: none; border-color: var(--rule-accent);
                 box-shadow: 0 3px 14px rgba(21,37,40,.07); }
 .op-role { font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
            text-transform: uppercase; color: var(--accent-d); }
-.opcard h3 { font-family: var(--serif); font-size: 20px; font-weight: 800;
+.opcard h3 { font-family: var(--serif); font-size: 18px; font-weight: 800;
+             white-space: nowrap;
              text-transform: none; letter-spacing: -.01em; color: var(--ink);
              margin: 6px 0 8px; }
 .op-tk { font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--ink-3); }
 .opcard p { font-size: 13.5px; color: var(--ink-2); margin-bottom: 14px; }
+/* Spotlight: the card under the pointer, or the one with keyboard focus,
+   stays sharp and the rest step back. Keyed off :has() on the grid rather
+   than :hover on the grid, so resting the pointer in a gap between cards
+   blurs nothing. Pointer devices only: on a touch screen a tap is a
+   navigation, and a blur flashing on the way out would read as a fault. */
+@media (hover: hover) {
+  .opcard { transition: border-color .15s ease, box-shadow .15s ease,
+                        filter .2s ease, opacity .2s ease; }
+  .opgrid:has(.opcard:hover, .opcard:focus-visible)
+    .opcard:not(:hover):not(:focus-visible) { filter: blur(2px); opacity: .55; }
+}
+.op-facts { margin: 4px 0 14px; }
+.op-f { display: flex; justify-content: space-between; align-items: baseline;
+        gap: 10px; padding: 6px 0; border-top: 1px dashed var(--rule-2); }
+.op-f:first-child { border-top: 0; }
+.op-f dt { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; }
+.op-f dd { margin: 0; font-family: var(--mono); font-size: 12.5px;
+           color: var(--ink); text-align: right; white-space: nowrap; }
 .op-foot { display: flex; justify-content: space-between; align-items: baseline;
-           border-top: 1px solid var(--rule-2); padding-top: 10px; }
+           margin-top: auto; border-top: 1px solid var(--rule-2); padding-top: 10px; }
 .op-k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
         text-transform: uppercase; color: var(--ink-3); }
 .op-v { font-family: var(--mono); font-size: 15px; font-weight: 600; }
@@ -555,29 +581,52 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
 /* min-width, because at four companies the measure column was being squeezed
    until "Net revenues" wrapped onto three lines. It scrolls inside .tbl-wrap
    rather than compressing. */
+/* The table sits on a card, the same white panel the charts use, so it reads
+   as one exhibit rather than as lines ruled across the page. */
+.sb-wrap { background: #fff; border: 1px solid var(--rule);
+           border-radius: var(--radius); }
 .scoreboard { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 13.5px; }
-.scoreboard th.sb-m { min-width: 168px; }
-.scoreboard caption { text-align: left; font-size: 12.5px; color: var(--ink-3);
-                      padding: 12px 14px; border-bottom: 1px solid var(--rule); }
-.scoreboard th, .scoreboard td { padding: 10px 14px; text-align: right;
+.scoreboard th.sb-m { min-width: 188px; }
+.scoreboard caption { caption-side: bottom; text-align: left; font-size: 12px;
+                      color: var(--ink-3); padding: 12px 18px 14px; }
+.scoreboard th, .scoreboard td { padding: 11px 18px; text-align: right;
                                  border-bottom: 1px solid var(--rule-2); }
 .scoreboard th.sb-m { text-align: left; font-weight: 600; color: var(--ink); }
-.sb-note { display: block; font-size: 11px; font-weight: 400; color: var(--ink-3);
-           letter-spacing: 0; text-transform: none; font-family: var(--sans); }
-.scoreboard thead th { background: var(--paper-2); border-bottom: 1px solid var(--rule); }
-/* The four section headings: financial, cash, operational, other. A label
-   over the rows, not a row to compare, so it reads as furniture. */
-.scoreboard tr.sb-g th { text-align: left; padding: 22px 14px 8px; font-family: var(--mono);
-                         font-size: 10.5px; font-weight: 600; letter-spacing: .08em;
-                         text-transform: uppercase; color: var(--ink-3);
-                         border-bottom: 1px solid var(--rule); }
-.scoreboard tbody tr.sb-g:first-child th { padding-top: 14px; }
+.sb-note { display: block; margin-top: 2px; font-size: 11px; font-weight: 400;
+           color: var(--ink-3); letter-spacing: 0; text-transform: none;
+           font-family: var(--sans); }
+/* Header: each company centered over its own column, ticker beneath. */
+.scoreboard thead th { background: #fff; border-bottom: 1px solid var(--rule);
+                       padding-top: 16px; padding-bottom: 14px; vertical-align: bottom; }
+.scoreboard thead th.sb-m { font-family: var(--mono); font-size: 10px; font-weight: 400;
+                            letter-spacing: .14em; text-transform: uppercase;
+                            color: var(--ink-3); }
+.scoreboard thead th.sb-co { text-align: center; text-transform: none; letter-spacing: 0; }
+/* The four section headings: a tinted band across the full width, so the
+   table breaks into four blocks a reader can find again at a glance. A label
+   over the rows, not a row to compare. */
+.scoreboard tr.sb-g th { text-align: left; padding: 9px 18px; font-family: var(--mono);
+                         font-size: 10px; font-weight: 600; letter-spacing: .16em;
+                         text-transform: uppercase; color: var(--accent-d);
+                         background: var(--accent-tint);
+                         border-top: 1px solid var(--rule-accent);
+                         border-bottom: 1px solid var(--rule-accent); }
+.scoreboard tbody tr.sb-g:first-child th { border-top: 0; }
+.scoreboard tbody tr:last-child th, .scoreboard tbody tr:last-child td { border-bottom: 0; }
 .sb-co { cursor: pointer; }
 .sb-co .sb-n { display: block; font-family: var(--serif); font-size: 15px; font-weight: 800;
                color: var(--ink); }
-.sb-co .sb-t { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); }
-.sb-v { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-2); }
-.sb-v.best { color: var(--accent-d); font-weight: 600; background: var(--wash-accent); }
+.sb-co .sb-t { display: block; margin-top: 2px; font-family: var(--mono); font-size: 10.5px;
+               font-weight: 400; color: var(--ink-3); }
+.sb-v { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-2);
+        white-space: nowrap; }
+/* The stronger figure: weight and a small dot rather than a filled cell, so
+   the marks read as emphasis and the table stays quiet. The dot also gives a
+   non-colour cue, which a tint alone did not. */
+.sb-v.best { color: var(--accent-d); font-weight: 700; }
+.sb-v.best::after { content: ""; display: inline-block; width: 5px; height: 5px;
+                    margin-left: 7px; border-radius: 50%; background: var(--accent);
+                    vertical-align: middle; }
 /* Reading a twelve-row comparison means holding one column in your head.
    Selecting a company dims the others instead. */
 .scoreboard[data-hl] td:not(.on), .scoreboard[data-hl] thead th:not(.on) { opacity: .38; }
@@ -599,6 +648,18 @@ footer .disc { max-width: 84ch; margin-bottom: 12px; }
                        text-transform: none; letter-spacing: -.01em; color: var(--ink);
                        margin: 0 0 7px; }
 .wcard p, .mcard p { font-size: 13.5px; color: var(--ink-2); margin: 0; }
+/* The outlook: always two by two, so four cards read as two pairs rather
+   than three and an orphan. Each card spans two grid rows and takes its rows
+   from the grid (subgrid), so the two headings in a row share a height and
+   both paragraphs start on the same line even when one heading wraps. A
+   wider column carries a slightly larger size and more leading to stay
+   comfortable to read. */
+.wgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; margin-top: 24px; }
+.wcard { display: grid; grid-row: span 2; grid-template-rows: subgrid; row-gap: 0;
+         padding-bottom: 30px; }
+.wcard h3 { font-size: 17px; margin-bottom: 9px; align-self: end; }
+.wcard p { font-size: 14.5px; line-height: 1.7; }
+@media (max-width: 700px) { .wgrid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- closing panel and buttons ---------- */
 .endcard { background: var(--wash-accent); border: 1px solid var(--rule-accent);
