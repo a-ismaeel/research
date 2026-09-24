@@ -1657,6 +1657,8 @@ table.float-head.floating thead th { box-shadow: 0 1px 0 var(--rule), 0 6px 10px
 @media (max-width: 560px) { .pn { grid-template-columns: 1fr; } .pn a.next { grid-column: 1; } }
 
 /* ---------- small fixes ---------- */
+/* One stance line now, the customer's: a single column at the prose measure. */
+.stance.one { grid-template-columns: minmax(0, 1fr); max-width: var(--measure); }
 /* The stage note drops its 2px left stripe; the italic and indent set it apart. */
 .stg-gate:not(.final) { border-left: 0; padding-left: 0; }
 
