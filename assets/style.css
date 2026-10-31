@@ -697,6 +697,12 @@ a.indcard:hover { text-decoration: none; border-color: var(--rule-accent);
           text-transform: uppercase; color: var(--accent-d); }
 .indcard.soon-card { opacity: .6; }
 .indcard.soon-card .ind-go { color: var(--ink-3); }
+/* Forty-odd of these at the full card size run to six screens on a phone, so
+   they sit in a tighter grid, two across even at phone width. */
+.soon-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.soon-card { padding: 12px 14px; }
+.indcard.soon-card h3 { font-size: 14.5px; margin-bottom: 4px; }
+.soon-card .ind-meta { margin: 0; font-size: 12px; }
 
 .dcount { margin-left: auto; font-family: var(--mono); font-size: 9px;
           letter-spacing: .1em; color: #8e99a4; }
