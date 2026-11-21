@@ -415,7 +415,7 @@
     body.innerHTML = `
       <div class="cohead"><div><h3>${c.full}</h3>
         <div class="meta"><b>${c.ticker}</b> · Listed ${c.listed} · ${F.pct(e.revenue[L] / I.revenue[L], 0)} of industry revenue` +
-        (e.mcap[L] != null ? ` · market value ${money(e.mcap[L])}` : "") + ` · <a href="${c.key}.html">full company page</a></div></div></div>
+        (e.mcap[L] != null ? ` · market value ${money(e.mcap[L])}` : "") + `</div></div></div>
       <div class="kpis" id="co-kpis"></div><div class="grid">${cards.join("")}</div>`;
     kpis($("co-kpis"), e, c.c);
 
