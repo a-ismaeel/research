@@ -25,8 +25,8 @@
     b(m) { return F.n(m / 1000); },           // SAR billions, no unit
     pct(v, dp = 1) { return v == null ? "n/a" : F.n(v * 100, dp) + "%"; },
     pct0(v) { return F.pct(v, 0); },
-    spct(v, dp = 1) { return v == null ? "n/a" : (v > 0 ? "+" : "") + F.pct(v, dp); },
-    pts(d, dp = 1) { return (d > 0 ? "+" : "") + F.n(d * 100, dp) + " pts"; },
+    spct(v, dp = 1) { if (v == null) return "n/a"; const r = +(v * 100).toFixed(dp); return r === 0 ? F.n(0, dp) + "%" : (r > 0 ? "+" : "") + F.n(r, dp) + "%"; },
+    pts(d, dp = 1) { const r = +(d * 100).toFixed(dp); return r === 0 ? F.n(0, dp) + " pts" : (r > 0 ? "+" : "") + F.n(r, dp) + " pts"; },
     x(v) { return v == null ? "n/a" : F.n(v, 1) + "x"; },
     m(v) { return F.n(v / 1e6, 1) + "m"; },    // counts in millions
     k(v) { return v >= 1000 ? F.n(v / 1000, 1) + "k" : F.n(v, 0); },

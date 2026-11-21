@@ -210,3 +210,19 @@ svg.dim .mk.hl{opacity:1}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 @media (max-width:640px){.mast .crumbs{display:none}.word{font-size:17px}}
+
+/* Landing pages: published industries, subscribe, about, footer */
+.pubs{display:grid;gap:16px;margin:0 0 34px}
+.pubs .featured{margin:0}
+.sub{display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;margin:56px 0 0;padding:24px 26px;
+  background:var(--card);border:1px solid var(--rule);border-radius:14px}
+.sub h2{font-size:22px;letter-spacing:-.02em;margin:0 0 6px}
+.sub p{margin:0;color:var(--ink-2);font-family:var(--serif);font-size:16px;max-width:60ch}
+.btn{display:inline-block;background:var(--brand);color:#fff;text-decoration:none;font-weight:700;border-radius:999px;padding:11px 20px;white-space:nowrap}
+.btn:hover{background:var(--brand-deep)}
+.about{margin:44px 0 0;max-width:68ch}
+.about h2{font-size:22px;letter-spacing:-.02em;margin:0 0 10px}
+.about p{font-family:var(--serif);font-size:16.5px;line-height:1.6;color:var(--ink-2);margin:0 0 12px}
+.foot p{margin:0 0 10px;max-width:90ch;line-height:1.55}
+.foot a{color:var(--ink-2)}
+.foot .fnav{display:flex;gap:14px;flex-wrap:wrap;font-weight:600}

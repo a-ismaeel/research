@@ -9,11 +9,11 @@
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
   const CO = [
-    { key: "stc", name: "stc", full: "Saudi Telecom Company", ticker: "7010", listed: "Jan 2003",
+    { key: "7010-stc", name: "stc", full: "Saudi Telecom Company", ticker: "7010", listed: "Jan 2003",
       c: css("--stc"), deep: "#0f5e52", soft: "#a3d8ce" },
-    { key: "mobily", name: "Mobily", full: "Etihad Etisalat Company", ticker: "7020", listed: "Dec 2004",
+    { key: "7020-mobily", name: "Mobily", full: "Etihad Etisalat Company", ticker: "7020", listed: "Dec 2004",
       c: css("--mobily"), deep: "#8f4d06", soft: "#f5c88c" },
-    { key: "zain", name: "Zain KSA", full: "Mobile Telecommunication Company Saudi Arabia", ticker: "7030", listed: "Jul 2008",
+    { key: "7030-zain", name: "Zain KSA", full: "Mobile Telecommunication Company Saudi Arabia", ticker: "7030", listed: "Jul 2008",
       c: css("--zain"), deep: "#3535a3", soft: "#c3c3f2" },
   ];
   const IND = { c: css("--ind"), deep: css("--ind-deep"), soft: css("--ind-soft") };
@@ -214,9 +214,9 @@
     ],
   });
 
-  const m = E.mobily, s = E.stc;
+  const m = E["7020-mobily"], s = E["7010-stc"];
   $("f-roicco").innerHTML = `Mobily went from <b>${F.pct(m.roic[0])} to ${F.pct(m.roic[L])}</b>, closing most of the gap to stc, ` +
-    `whose return fell from ${F.pct(s.roic[0])} to ${F.pct(s.roic[L])}. Zain KSA has stayed under ${F.pct(Math.ceil(Math.max(...E.zain.roic) * 100) / 100, 0)}.`;
+    `whose return fell from ${F.pct(s.roic[0])} to ${F.pct(s.roic[L])}. Zain KSA has stayed under ${F.pct(Math.ceil(Math.max(...E["7030-zain"].roic) * 100) / 100, 0)}.`;
   C.lines("#c-roicco", {
     years: Y, fmt: F.pct, axisFmt: F.pct0, min: 0,
     series: [...CO.map(c => ({ name: c.name, color: c.c, values: E[c.key].roic })),
@@ -238,8 +238,8 @@
     series: CO.map(c => ({ name: c.name, color: c.c, values: E[c.key].em })),
   });
 
-  const z = E.zain;
-  $("f-cxi").innerHTML = `Zain KSA cut capital spending to <b>${F.pct(z.capex_rev[L])}</b> of revenue in ${Y[L]}, from ${F.pct(z.capex_rev[0], 0)} in ${Y[0]}. ` +
+  const z = E["7030-zain"];
+  $("f-cxi").innerHTML = `Zain KSA's capex fell to <b>${F.pct(z.capex_rev[L])}</b> of revenue from ${F.pct(z.capex_rev[0], 0)} in ${Y[0]}, mostly because its tower sale-leaseback moved network cost into lease payments. ` +
     `stc and Mobily still spend ${F.pct(s.capex_rev[L], 0)} and ${F.pct(m.capex_rev[L], 0)}.`;
   C.lines("#c-cxi", {
     years: Y, fmt: F.pct, axisFmt: F.pct0, min: 0,
@@ -306,7 +306,7 @@
 
     const sp = e.roic[L] - e.wacc[L];
     const yrsAbove = e.roic.filter((r, i) => r > e.wacc[i]).length;
-    $("cf-roic").innerHTML = `ROIC <b>${F.pct(e.roic[L])}</b> against a ${F.pct(e.wacc[L])} cost of capital: ${F.pts(sp)}. ` + (yrsAbove === 0 ? `Below its cost in every year since ${Y[0]}.` : yrsAbove === Y.length ? `Above its cost in every year since ${Y[0]}.` : `Above its cost in ${yrsAbove} of ${Y.length} years.`);
+    $("cf-roic").innerHTML = `ROIC <b>${F.pct(e.roic[L])}</b> against the cost of capital of ${F.pct(e.wacc[L])}: ${F.pts(sp)}. ` + (yrsAbove === 0 ? `Below its cost in every year since ${Y[0]}.` : yrsAbove === Y.length ? `Above its cost in every year since ${Y[0]}.` : `Above its cost in ${yrsAbove} of ${Y.length} years.`);
     C.lines("#cc-roic", { years: Y, fmt: F.pct, axisFmt: F.pct0, min: 0, band: [0, 1], bandColor: c.soft,
       series: [{ name: "ROIC", color: c.c, values: e.roic, width: 2.5 }, { name: "WACC", color: "#6f878c", values: e.wacc, width: 2, dash: "5 4" }],
       extraTip: i => [{ k: "Spread", v: F.pts(e.roic[i] - e.wacc[i]) }] });
@@ -343,8 +343,8 @@
     company(b.dataset.k);
     history.replaceState(null, "", "#company-" + b.dataset.k);
   });
-  const fromHash = (location.hash.match(/^#company-(\w+)/) || [])[1];
-  const startKey = CO.some(c => c.key === fromHash) ? fromHash : "stc";
+  const fromHash = (location.hash.match(/^#company-([\w-]+)/) || [])[1];
+  const startKey = CO.some(c => c.key === fromHash) ? fromHash : CO[0].key;
   tabs.querySelectorAll(".cotab").forEach(x => x.setAttribute("aria-selected", x.dataset.k === startKey));
   company(startKey);
   if (fromHash) document.getElementById("company").scrollIntoView();
