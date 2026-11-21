@@ -252,6 +252,7 @@
         const [a, b] = o.band.map(k => o.series[k].values);
         const up = o.bandColor || "var(--brand-tint)", dn = "#f6d4d4";
         for (let i = 0; i < n - 1; i++) {
+          if ([a[i], b[i], a[i + 1], b[i + 1]].some(v => v == null)) continue;
           const d0 = a[i] - b[i], d1 = a[i + 1] - b[i + 1];
           const P = (xx, yy) => xx + "," + yy;
           if (d0 * d1 >= 0) {
@@ -268,6 +269,9 @@
         let d = "", started = false;
         s.values.forEach((v, i) => { if (v == null) { started = false; return; } d += (started ? "L" : "M") + x(i) + "," + y(v); started = true; });
         el("path", { d, fill: "none", stroke: s.color, "stroke-width": s.width || 2.25, "stroke-dasharray": s.dash || null, "stroke-linejoin": "round", "stroke-linecap": "round" }, g);
+        // A dashed series draws no dots, except where a point has no neighbor
+        // to draw a line to: a single estimate would otherwise be invisible.
+        if (s.dash) s.values.forEach((v, i) => { if (v != null && s.values[i - 1] == null && s.values[i + 1] == null) el("circle", { cx: x(i), cy: y(v), r: 3.5, fill: "#fff", stroke: s.color, "stroke-width": 2 }, g); });
         if (!s.dash) s.values.forEach((v, i) => { if (v != null && (i === n - 1 || o.dots)) el("circle", { cx: x(i), cy: y(v), r: 4, fill: s.color, stroke: "#fff", "stroke-width": 2 }, g); });
         return g;
       });

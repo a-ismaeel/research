@@ -7,6 +7,9 @@
   const C = window.Charts, F = C.F, S = window.SECTOR;
   const Y = S.years, E = S.entities, N = Y.length, L = N - 1, P = L - 1;
   const CO = S.companies, I = E.industry;
+  // One listed company: its accounts are the industry, so the page is Part 1
+  // alone, with no side-by-side and no company picker.
+  const SOLO = CO.length === 1;
   const $ = id => document.getElementById(id);
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const IND = { c: css("--ind"), deep: css("--ind-deep"), soft: css("--ind-soft") };
@@ -47,6 +50,7 @@
   const tone = v => v >= 0 ? "var(--pos)" : "var(--neg)";
   const FMT = {
     pct: F.pct, pct0: F.pct0, k: v => F.n(v / 1000, 1) + "k", k1: v => F.n(v / 1000, 1),
+    m: v => F.n(v / 1e6, 1) + "m", n0: v => F.int(v), b1: v => F.n(v / 1e9, 1),
     mt: v => F.n(v / 1e6, 2) + "m t", kt: v => F.n(v / 1000, 1) + "k t a day", sar0: v => "SAR " + F.int(v), x: F.x,
   };
   const listOf = a => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
@@ -56,7 +60,8 @@
   // ---- page scaffolding ----
   document.title = `${S.title} FY${Y[L]} | aismaeel research`;
   $("h-title").innerHTML = `${S.title} <em>/ FY ${Y[L]}</em>`;
-  $("h-sub").textContent = `${listOf(CO.map(c => `${c.name} (${c.ticker})`))}, added together and side by side. ` +
+  $("h-sub").textContent = (SOLO ? `${CO[0].name} (${CO[0].ticker}) is the only listed company, so its accounts are the industry's. `
+    : `${listOf(CO.map(c => `${c.name} (${c.ticker})`))}, added together and side by side. `) +
     `Year ended 31 December ${Y[L]} against ${Y[P]}. SAR unless stated.`;
   $("crumb").textContent = S.short;
   const card = (id, title, note, extra = "") =>
@@ -70,6 +75,7 @@
     card("mrg", "Margins", "% of revenue. Net margin is on profit from continuing operations."),
     card("100", "Where each SAR 100 of revenue goes", ""),
     ...(ops[0] ? [card("op0", ops[0].title, ops[0].unit)] : []),
+    ...(SOLO && S.mix ? [card("mix", S.mix.title, "% of revenue.")] : []),
   ];
   const p1b = [
     card("roic", "Return on capital against its cost", "Shaded green where ROIC beats WACC (dashed), red where it falls short."),
@@ -94,10 +100,15 @@
   ];
   if (p2.length % 2) p2[p2.length - 1] = p2[p2.length - 1].replace('class="card"', 'class="card wide"');
 
+  const head1 = SOLO
+    ? `<div class="num">ONE COMPANY</div><h2>${CO[0].name}, <em>the whole listed industry</em></h2>
+      <p>${CO[0].full}. Listed ${CO[0].listed}. Every chart is its accounts.</p>`
+    : `<div class="num">PART 1</div><h2>The industry, <em>as one business</em></h2>
+      <p>${CO.length} companies added together. No company names until Part 2.</p>`;
+  if (SOLO) document.querySelectorAll(".tiers").forEach(n => n.remove());
   $("app").innerHTML = `
   <section class="part" id="industry">
-    <div class="parth"><div><div class="num">PART 1</div><h2>The industry, <em>as one business</em></h2>
-      <p>${CO.length} companies added together. No company names until Part 2.</p></div></div>
+    <div class="parth"><div>${head1}</div></div>
     <div class="kpis" id="ind-kpis"></div>
     <div class="grid">${p1.join("")}</div>
     <h3 class="subh">Capital, returns and <em>what the market paid</em></h3>
@@ -105,7 +116,7 @@
     <div class="grid">${p1b.join("")}</div>
     <p class="know" id="know"></p>
     <div class="takes" id="takes"></div>
-  </section>
+  </section>` + (SOLO ? "" : `
   <section class="part" id="compare">
     <div class="parth"><div><div class="num">PART 2</div><h2>Side by side, <em>who leads on what</em></h2>
       <p>The same measures for each company. FY${Y[L]} first, then how the gaps opened.</p></div>
@@ -118,7 +129,7 @@
       <p>Pick a company. Every chart below redraws for it.</p></div></div>
     <div class="cotabs" role="tablist" id="cotabs"></div>
     <div id="cobody"></div>
-  </section>`;
+  </section>`);
 
   // ---- KPI tiles ----
   function kpis(host, e, color) {
@@ -127,13 +138,13 @@
     const tiles = [
       { l: "Revenue", v: Math.abs(e.revenue[L]) >= 1000 ? bn(e.revenue[L]) : F.n(e.revenue[L]), u: Math.abs(e.revenue[L]) >= 1000 ? "SAR B" : "SAR M", dv: d(e.revenue[L], e.revenue[P]), kind: "pct" },
       { l: "EBITDA", v: Math.abs(e.ebitda[L]) >= 1000 ? bn(e.ebitda[L]) : F.n(e.ebitda[L]), u: Math.abs(e.ebitda[L]) >= 1000 ? "SAR B" : "SAR M", dv: d(e.ebitda[L], e.ebitda[P]), kind: "pct" },
-      { l: "Net profit", v: npB ? bn(e.np[L]) : F.n(e.np[L]), u: npB ? "SAR B" : "SAR M", dv: e.np[P] > 0 ? d(e.np[L], e.np[P]) : null, kind: "pct" },
+      { l: "Net profit", v: npB ? bn(e.np[L]) : F.n(e.np[L]), u: npB ? "SAR B" : "SAR M", dv: e.np[P] > 0 && e.np[L] >= 0 ? d(e.np[L], e.np[P]) : null, kind: "pct" },
       { l: "EBITDA margin", v: F.n(e.em[L] * 100), u: "%", dv: e.em[L] - e.em[P], kind: "pts" },
       { l: "ROIC", v: F.n(e.roic[L] * 100), u: "%", dv: e.roic[L] - e.wacc[L], kind: "spread" },
     ];
     if (S.kpi && e[S.kpi.key] && e[S.kpi.key][L] != null) {
       const k = S.kpi, v = e[k.key][L];
-      const [num, unit] = k.fmt === "mt" ? [F.n(v / 1e6, 2), "m tons"] : k.fmt === "k" ? [F.n(v / 1000, 1), "k"] : [F.n(v), ""];
+      const [num, unit] = k.fmt === "mt" ? [F.n(v / 1e6, 2), "m tons"] : k.fmt === "k" ? [F.n(v / 1000, 1), "k"] : k.fmt === "m" ? [F.n(v / 1e6, 1), "m"] : [F.n(v), ""];
       tiles.push({ l: k.l, v: num, u: unit, dv: d(v, e[k.key][P]), kind: "pct" });
     }
     host.innerHTML = tiles.map(t => {
@@ -159,9 +170,9 @@
         { name: "Net", color: t.dk, values: e.nm, width: 2.5 }] });
   }
   function roic(id, e, t) {
-    C.lines("#c-" + id, { years: Y, fmt: F.pct, axisFmt: F.pct0, min: 0, band: [0, 1], bandColor: t === T.ind ? undefined : t.soft,
+    C.lines("#c-" + id, { years: Y, fmt: F.pct, axisFmt: F.pct0, min: Math.min(0, ...e.roic.filter(v => v != null)), band: [0, 1], bandColor: t === T.ind ? undefined : t.soft,
       series: [{ name: "ROIC", color: t.line, values: e.roic, width: 2.5 }, { name: "WACC", color: "#6f878c", values: e.wacc, width: 2, dash: "5 4" }],
-      extraTip: i => [{ k: "Spread", v: F.pts(e.roic[i] - e.wacc[i]) }] });
+      extraTip: i => e.wacc[i] == null ? [] : [{ k: "Spread", v: F.pts(e.roic[i] - e.wacc[i]) }] });
   }
   function capex(id, e, t) {
     C.bars("#c-" + id, { years: Y, values: e.capexp.map(v => v == null ? null : v / 1000), color: t.soft, deep: t.line, name: capexCfg.title,
@@ -177,7 +188,7 @@
     if (!o || !e[o.key] || e[o.key].every(v => v == null)) return false;
     const i0 = Math.max(0, e[o.key].findIndex(v => v != null));   // start at the first reported year
     C.bars("#c-" + id, { years: Y.slice(i0), values: e[o.key].slice(i0).map(v => v == null ? null : v * o.scale), color: t.soft, deep: t.line, name: o.title,
-      label: v => F.n(v, v < 10 ? 1 : 0), tip: v => FMT[o.fmt](v / o.scale),
+      label: v => F.n(v, o.dp != null ? o.dp : v < 10 ? 1 : 0), tip: v => FMT[o.fmt](v / o.scale),
       strips: o.strip && e[o.strip.key] ? [{ name: o.strip.name, values: e[o.strip.key].slice(i0), fmt: v => FMT[o.strip.fmt](v), color: () => "var(--ink-2)" }] : [] });
     return true;
   }
@@ -229,7 +240,9 @@
   const moved = [0, 1, 2, 3].map(k => b100[k].value - a100[k].value);
   const mk = best(moved.map((m, k) => k === 3 && b100[3].value < 0 ? 0 : Math.abs(m)));
   const lbl = ["cost of revenue", "operating costs", "depreciation", "items below operating profit"][mk];
-  $("f-100").innerHTML = `Net profit kept <b>SAR ${F.n(b100[4].value, 1)}</b> of every 100, against ${F.n(a100[4].value, 1)} in ${Y[P]}. ` +
+  const was = v => v < 0 ? `a loss of SAR ${F.n(-v, 1)}` : `a profit of SAR ${F.n(v, 1)}`;
+  $("f-100").innerHTML = (b100[4].value < 0 ? `Every SAR 100 of revenue ended as <b>${was(b100[4].value)}</b>, against ${was(a100[4].value)} in ${Y[P]}. `
+      : `Net profit kept <b>SAR ${F.n(b100[4].value, 1)}</b> of every 100, against ${F.n(a100[4].value, 1)} in ${Y[P]}. `) +
     `The biggest move was ${lbl}, ${moved[mk] > 0 ? "up" : "down"} from SAR ${F.n(a100[mk].value, 1)} to ${F.n(b100[mk].value, 1)}.`;
   const otherInc = b100[3].value < 0;
   if (otherInc) $("f-100").innerHTML += ` Other income added SAR ${F.n(-b100[3].value, 1)} per 100 on top of operating profit.`;
@@ -253,10 +266,21 @@
     $("f-op" + j).innerHTML = txt;
   });
 
-  const spread = I.roic.map((r, i) => r - I.wacc[i]);
-  const above = spread.filter(s => s > 0).length;
+  if (SOLO && $("c-mix")) {
+    const m = mixChart("mix", I, T.ind);
+    if (m) {
+      const [k0, n0] = S.mix.parts[0];
+      $("f-mix").innerHTML = `${n0} ${n0.endsWith("s") ? "are" : "is"} <b>${F.pct(m.sh(k0, L), 0)}</b> of revenue` + (m.i0 < L ? `, against ${F.pct(m.sh(k0, m.i0), 0)} in ${Y[m.i0]}.` : ".");
+    } else $("c-mix").closest(".card").remove();
+  }
+
+  const spread = I.roic.map((r, i) => r == null || I.wacc[i] == null ? null : r - I.wacc[i]);
+  const known = spread.filter(s => s != null).length, above = spread.filter(s => s != null && s > 0).length;
+  const w0 = spread.findIndex(s => s != null);
   $("f-roic").innerHTML = `ROIC is <b>${F.pct(I.roic[L])}</b> against the cost of capital of ${F.pct(I.wacc[L])}, a spread of ${F.pts(spread[L])}. ` +
-    (above === N ? `Above its cost every year since ${Y[0]}.` : above === 0 ? `Below its cost every year since ${Y[0]}.` : `Above its cost in ${above} of ${N} years.`);
+    (known === 1 ? `ROIC was ${F.pct(I.roic[0])} in ${Y[0]}; the cost of capital is estimated for ${Y[w0]} only.`
+      : known < N ? `Above its cost in ${above} of the ${known} years with an estimate.`
+      : above === N ? `Above its cost every year since ${Y[0]}.` : above === 0 ? `Below its cost every year since ${Y[0]}.` : `Above its cost in ${above} of ${N} years.`);
   roic("roic", I, T.ind);
 
   const cxMax = Math.max(...I.capexpct.filter(v => v != null));
@@ -266,7 +290,7 @@
 
   const fcfL = I.fcf[L], dvL = I.divs[L];
   $("f-fcf").innerHTML = fcfL <= 0
-    ? `Free cash flow was <b>${money(fcfL)}</b> in ${Y[L]}, so the ${money(dvL)} paid in dividends was funded from elsewhere.`
+    ? `Free cash flow was <b>${money(fcfL)}</b> in ${Y[L]}` + (dvL > 0 ? `, so the ${money(dvL)} paid in dividends was funded from elsewhere.` : `, and no dividend was paid.`)
     : `Dividends paid of <b>${money(dvL)}</b> were ${dvL > fcfL ? F.n(dvL / fcfL, 1) + " times" : F.pct(dvL / fcfL, 0) + " of"} free cash flow in ${Y[L]}.` +
       ` Over ${N} years, ${money(I.fcf.reduce((a, b) => a + nz(b), 0))} of free cash flow and ${money(I.divs.reduce((a, b) => a + b, 0))} paid out.`;
   fcf("fcf", I, T.ind);
@@ -287,15 +311,18 @@
 
   // what to know first
   const notes = [];
-  if (S.dropped.length) notes.push(`Industry figures start in ${Y[0]}, the first year ${nm} companies report, so a company joining the cohort never shows up as growth.`);
+  if (S.dropped.length && !SOLO) notes.push(`Industry figures start in ${Y[0]}, the first year ${nm} companies report, so a company joining the cohort never shows up as growth.`);
   const late = CO.filter(c => c.listedYear > Y[0]);
-  if (late.length) {
+  if (SOLO && late.length) notes.push(`${CO[0].name} listed in ${CO[0].listed}, so there is no market value or price multiple before ${CO[0].listedYear}.`);
+  else if (late.length) {
     const byYear = [...new Set(late.map(c => c.listedYear))].sort().map(y => `${listOf(late.filter(c => c.listedYear === y).map(c => c.name))} in ${y}`);
     notes.push(`Not every company has been listed since ${Y[0]}: ${listOf(byYear)}. Valuation figures start from each listing.`);
   }
   const disc = [P, L].filter(i => I.np_total[i] != null && Math.abs(I.np_total[i] - I.np[i]) > Math.abs(I.np[i]) * 0.02);
   if (disc.length) notes.push(`Net profit is from continuing operations; reported profit in FY${Y[disc[0]]} differs by ${money(I.np_total[disc[0]] - I.np[disc[0]])}.`);
-  if (S.capex) notes.push(`Vehicles are bought through operating cash flow, so free cash flow is already after the fleet purchases shown under capital.`);
+  const w1 = I.wacc.findIndex(v => v != null);
+  if (w1 > 0) notes.push(`The cost of capital is estimated from ${Y[w1]} only: earlier years have no beta in the model.`);
+  if (S.capex && S.capex.key !== "capex") notes.push(`Vehicles are bought through operating cash flow, so free cash flow is already after the fleet purchases shown under capital.`);
   $("know").innerHTML = notes.length ? `<b>${notes.length === 1 ? "One thing" : ["", "", "Two things", "Three things", "Four things"][notes.length]} to know first.</b> ${notes.join(" ")}` : "";
   if (!notes.length) $("know").remove();
 
@@ -306,7 +333,7 @@
   (spread[L] > 0 ? good : bad).push(spread[L] > 0
     ? ["Earns above its cost", `ROIC of ${F.pct(I.roic[L])} beats the cost of capital of ${F.pct(I.wacc[L])} by ${F.n(spread[L] * 100)} points.`]
     : ["Earns below its cost", `ROIC of ${F.pct(I.roic[L])} falls short of the cost of capital of ${F.pct(I.wacc[L])}.`]);
-  if (Math.abs(spread[L] - spread[0]) > 0.01)
+  if (spread[0] != null && Math.abs(spread[L] - spread[0]) > 0.01)
     (spread[L] > spread[0] ? good : bad).push(spread[L] > spread[0]
       ? ["The spread widened", `ROIC less WACC went from ${F.pts(spread[0])} in ${Y[0]} to ${F.pts(spread[L])}.`]
       : ["The spread narrowed", `ROIC less WACC went from ${F.pts(spread[0])} in ${Y[0]} to ${F.pts(spread[L])}.`]);
@@ -320,6 +347,8 @@
   else if (I.debtshare[L] < 0.35) good.push(["Light balance sheet", `Debt is ${F.pct(I.debtshare[L], 0)} of book capital.`]);
   $("takes").innerHTML = [...good.slice(0, 3).map(t => ["good", ...t]), ...bad.slice(0, 3).map(t => ["bad", ...t])]
     .map(([k, h, p]) => `<div class="take ${k === "bad" ? "bad" : ""}"><h4>${h}</h4><p>${p}</p></div>`).join("");
+
+  if (SOLO) return;
 
   // ================= PART 2 =================
   const boardDef = [
