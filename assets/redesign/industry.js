@@ -36,6 +36,11 @@
     e.capexp = cx.map(v => v == null ? null : Math.abs(v));
     e.capexpct = capexCfg.pct === "capex_rev" ? e.capex_rev : (e[capexCfg.pct] || []);
     e.debtshare = e.debt.map((d, i) => (d == null || e.equity[i] == null) ? null : d / (d + e.equity[i]));
+    // A start-up year, revenue under a tenth of the latest, makes any ratio
+    // to revenue meaningless (one club, a margin of -2,000%), so those years
+    // carry no margin and no capital intensity.
+    e.early = e.revenue.map(v => v != null && e.revenue[L] > 0 && v < 0.1 * e.revenue[L]);
+    ["gm", "em", "nm", "capexpct"].forEach(k => { e[k] = e[k].map((v, i) => e.early[i] ? null : v); });
   }
   // An industry operating total only counts years in which every company
   // that discloses the figure today also disclosed it then; otherwise a
@@ -51,8 +56,11 @@
   const FMT = {
     pct: F.pct, pct0: F.pct0, k: v => F.n(v / 1000, 1) + "k", k1: v => F.n(v / 1000, 1),
     m: v => F.n(v / 1e6, 1) + "m", n0: v => F.int(v), b1: v => F.n(v / 1e9, 1),
+    m1: v => F.n(v / 1e6, 1), msar: v => "SAR " + F.n(v / 1e6, 1) + "M",
     mt: v => F.n(v / 1e6, 2) + "m t", kt: v => F.n(v / 1000, 1) + "k t a day", sar0: v => "SAR " + F.int(v), x: F.x,
   };
+  // A strip value in a sentence: the strip itself drops the unit, prose cannot.
+  const stripTxt = (f, v) => f === "m1" ? FMT.msar(v) : FMT[f](v) + (f.startsWith("k") ? "k" : "");
   const listOf = a => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
   const best = (vals, dir = 1) => { let k = -1; vals.forEach((v, i) => { if (v != null && (k < 0 || dir * v > dir * vals[k])) k = i; }); return k; };
   const last = k => CO.map(c => E[c.key][k] ? E[c.key][k][L] : null);
@@ -259,8 +267,8 @@
     let txt = i0 >= 0 && i0 < L ? `From ${FMT[o.fmt](v[i0])} in ${Y[i0]} to <b>${FMT[o.fmt](v[L])}</b> in ${Y[L]}.` : `<b>${FMT[o.fmt](v[L])}</b> in ${Y[L]}.`;
     if (o.strip && I[o.strip.key] && I[o.strip.key][L] != null) {
       const sv = I[o.strip.key], s0 = sv.findIndex(x => x != null);
-      txt += ` ${o.strip.name.split(",")[0]}: ${FMT[o.strip.fmt](sv[L])}${o.strip.fmt.startsWith("k") ? "k" : ""}` +
-        (s0 >= 0 && s0 < L ? `, against ${FMT[o.strip.fmt](sv[s0])}${o.strip.fmt.startsWith("k") ? "k" : ""} in ${Y[s0]}.` : ".");
+      txt += ` ${o.strip.name.split(",")[0]}: ${stripTxt(o.strip.fmt, sv[L])}` +
+        (s0 >= 0 && s0 < L ? `, against ${stripTxt(o.strip.fmt, sv[s0])} in ${Y[s0]}.` : ".");
     }
     if (miss.length) txt += ` ${o.title} excludes ${listOf(miss)}, which ${miss.length > 1 ? "do" : "does"} not disclose it.`;
     $("f-op" + j).innerHTML = txt;
@@ -322,6 +330,9 @@
   if (disc.length) notes.push(`Net profit is from continuing operations; reported profit in FY${Y[disc[0]]} differs by ${money(I.np_total[disc[0]] - I.np[disc[0]])}.`);
   const w1 = I.wacc.findIndex(v => v != null);
   if (w1 > 0) notes.push(`The cost of capital is estimated from ${Y[w1]} only: earlier years have no beta in the model.`);
+  const young = CO.filter(c => E[c.key].early.some(Boolean));
+  if (young.length) notes.push(listOf(young.map(c => `${c.name}'s margins start in ${Y[E[c.key].early.lastIndexOf(true) + 1]}`)) +
+    `: before that its revenue was under a tenth of today's, too small for a margin to mean anything.`);
   if (S.capex && S.capex.key !== "capex") notes.push(`Vehicles are bought through operating cash flow, so free cash flow is already after the fleet purchases shown under capital.`);
   $("know").innerHTML = notes.length ? `<b>${notes.length === 1 ? "One thing" : ["", "", "Two things", "Three things", "Four things"][notes.length]} to know first.</b> ${notes.join(" ")}` : "";
   if (!notes.length) $("know").remove();
@@ -401,7 +412,7 @@
     const k = S.compare_line.key, vL = last(k), t = best(vL), b = best(vL, -1);
     $("f-cl").innerHTML = vL.every(v => v == null) ? "" : `${CO[t].name} is highest at <b>${FMT[S.compare_line.fmt](vL[t])}</b>, ${CO[b].name} lowest at ${FMT[S.compare_line.fmt](vL[b])}.` +
       (vL.some(v => v == null) ? ` ${listOf(CO.filter((c, i) => vL[i] == null).map(c => c.name))} does not disclose it.` : "");
-    C.lines("#c-cl", { years: Y, fmt: FMT[S.compare_line.fmt], axisFmt: S.compare_line.fmt.startsWith("pct") ? F.pct0 : v => F.n(v / 1000, 0) + "k", min: 0, series: CO.map(c => ({ name: c.name, color: c.c, values: E[c.key][k] || [] })) });
+    C.lines("#c-cl", { years: Y, fmt: FMT[S.compare_line.fmt], axisFmt: S.compare_line.fmt.startsWith("pct") ? F.pct0 : S.compare_line.fmt === "msar" ? v => F.n(v / 1e6, 0) + "M" : v => F.n(v / 1000, 0) + "k", min: 0, series: CO.map(c => ({ name: c.name, color: c.c, values: E[c.key][k] || [] })) });
   }
 
   const evL = last("ev_ebitda"), vT = best(evL), vB = best(evL, -1);
@@ -451,13 +462,17 @@
     const cg = cagr(e.revenue);
     $("f-crev").innerHTML = `${cg == null ? "" : `Up <b>${F.pct(cg)}</b> a year since ${Y[0]}; `}${F.spct(e.g[L])} in ${Y[L]} against ${F.spct(I.g[L])} for the industry.`;
     revenue("crev", e, t);
-    const d = e.em[L] - e.em[0];
-    $("f-cmrg").innerHTML = `EBITDA margin <b>${F.pct(e.em[L])}</b>, ` + (Math.abs(d) < 0.005 ? `about where it was in ${Y[0]}.` : `against ${F.pct(e.em[0])} in ${Y[0]}.`) +
-      ` Net margin ${F.pct(e.nm[L])}, from ${F.pct(e.nm[0])}.`;
+    const m0 = Math.max(0, e.em.findIndex(v => v != null)), d = e.em[L] - e.em[m0];
+    $("f-cmrg").innerHTML = `EBITDA margin <b>${F.pct(e.em[L])}</b>, ` + (Math.abs(d) < 0.005 ? `about where it was in ${Y[m0]}.` : `against ${F.pct(e.em[m0])} in ${Y[m0]}.`) +
+      ` Net margin ${F.pct(e.nm[L])}, from ${F.pct(e.nm[m0])}.`;
     margins("cmrg", e, t);
-    const sp = e.roic[L] - e.wacc[L], ya = e.roic.filter((r, i) => r > e.wacc[i]).length;
+    const sp = e.roic[L] - e.wacc[L];
+    const kn = e.roic.filter((r, i) => r != null && e.wacc[i] != null).length;
+    const ya = e.roic.filter((r, i) => r != null && e.wacc[i] != null && r > e.wacc[i]).length;
+    const wf = e.wacc.findIndex(v => v != null);
     $("f-croic").innerHTML = `ROIC <b>${F.pct(e.roic[L])}</b> against the cost of capital of ${F.pct(e.wacc[L])}: ${F.pts(sp)}. ` +
-      (ya === 0 ? `Below its cost every year since ${Y[0]}.` : ya === N ? `Above its cost every year since ${Y[0]}.` : `Above its cost in ${ya} of ${N} years.`);
+      (kn < N ? (kn === 1 ? `The cost of capital is estimated for ${Y[wf]} only.` : `Above its cost in ${ya} of ${kn} years since ${Y[wf]}, the first with a cost of capital.`)
+        : ya === 0 ? `Below its cost every year since ${Y[0]}.` : ya === N ? `Above its cost every year since ${Y[0]}.` : `Above its cost in ${ya} of ${N} years.`);
     roic("croic", e, t);
     if (hasMix) {
       const m = mixChart("cmix", e, t);
@@ -472,10 +487,10 @@
       const v = e[o.key], i0 = v.findIndex(x => x != null), shr = I[o.key] && I[o.key][L] && v[L] != null && !o.strip ? null : null;
       $("f-cop" + j).innerHTML = v[L] == null ? `Not disclosed for ${Y[L]}.` :
         (i0 < L ? `From ${FMT[o.fmt](v[i0])} in ${Y[i0]} to <b>${FMT[o.fmt](v[L])}</b>.` : `<b>${FMT[o.fmt](v[L])}</b> in ${Y[L]}.`) +
-        (o.strip && e[o.strip.key] && e[o.strip.key][L] != null ? ` ${o.strip.name.split(",")[0]}: ${FMT[o.strip.fmt](e[o.strip.key][L])}${o.strip.fmt.startsWith("k") ? "k" : ""}.` : "");
+        (o.strip && e[o.strip.key] && e[o.strip.key][L] != null ? ` ${o.strip.name.split(",")[0]}: ${stripTxt(o.strip.fmt, e[o.strip.key][L])}.` : "");
     });
     const cum = a => a.reduce((x, y) => x + nz(y), 0);
-    $("f-cfcf").innerHTML = `Since ${Y[0]}: <b>${money(cum(e.fcf))}</b> of free cash flow, ${money(cum(e.divs))} paid in dividends.` +
+    $("f-cfcf").innerHTML = `Since ${Y[0]}: <b>${money(cum(e.fcf))}</b> of free cash flow, ` + (cum(e.divs) > 0 ? `${money(cum(e.divs))} paid in dividends.` : `and no dividend paid.`) +
       (e.fcf[L] > 0 && e.divs[L] > 0 ? ` In ${Y[L]}, ${F.pct(e.divs[L] / e.fcf[L], 0)} of it went out.` : e.fcf[L] <= 0 ? ` Free cash flow was negative in ${Y[L]}.` : "");
     fcf("cfcf", e, t);
     $("f-ccx").innerHTML = `<b>${money(e.capexp[L])}</b> in ${Y[L]}, ${F.pct(e.capexpct[L])} of revenue. The industry spent ${F.pct(I.capexpct[L])}.`;
